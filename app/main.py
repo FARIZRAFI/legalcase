@@ -338,6 +338,6 @@ def version():
         "version":
         "1.0.0"
     }
-from fastapi.responses import HTMLResponse
+
 
 
