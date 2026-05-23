@@ -110,7 +110,7 @@ app.include_router(document_router)
 
 app.include_router(dashboard_router)
 
-app.include_router(websocket_router)
+#app.include_router(websocket_router)
 
 app.include_router(page_router)
 
