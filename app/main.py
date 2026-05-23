@@ -185,6 +185,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+@app.get("/")
+def root():
+    return {"message": "Legal API Running"}
+
 
 
 # =========================
@@ -337,8 +341,3 @@ def version():
 from fastapi.responses import HTMLResponse
 
 
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    return """
-    <h1>Legal Case Management API Running Successfully 🚀</h1>
-    """
