@@ -334,3 +334,11 @@ def version():
         "version":
         "1.0.0"
     }
+from fastapi.responses import HTMLResponse
+
+
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    return """
+    <h1>Legal Case Management API Running Successfully 🚀</h1>
+    """
