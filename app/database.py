@@ -3,7 +3,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # PostgreSQL Database URL
-DATABASE_URL = "postgresql://postgres:12345@localhost/legal_case_db"
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 
 # Create Engine
 engine = create_engine(DATABASE_URL)
