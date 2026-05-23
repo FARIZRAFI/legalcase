@@ -1,0 +1,754 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<link
+href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"
+rel="stylesheet"
+/>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<style>
+
+body{
+    background:#f4f7fb;
+}
+
+.page-header{
+    background:white;
+    padding:25px;
+    border-radius:20px;
+    margin-bottom:25px;
+}
+
+.calendar-card{
+    background:white;
+    padding:25px;
+    border-radius:20px;
+}
+
+.hearing-card{
+    background:#f8fafc;
+    border-radius:14px;
+    padding:15px;
+    margin-bottom:15px;
+    border:1px solid #e5e7eb;
+}
+
+.fc-event{
+    cursor:pointer;
+}
+
+</style>
+
+<div class="page-header">
+
+    <div class="d-flex justify-content-between align-items-center">
+
+        <div>
+
+            <h2 class="fw-bold">
+                Hearing Scheduler
+            </h2>
+
+            <p class="text-muted">
+                Manage court hearings dynamically
+            </p>
+
+        </div>
+
+        <button
+            class="btn btn-primary"
+            onclick="openCreateModal()"
+        >
+            + Schedule Hearing
+        </button>
+
+    </div>
+
+</div>
+
+<div class="row">
+
+    <div class="col-lg-8">
+
+        <div class="calendar-card">
+
+            <div id="calendar"></div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-4">
+
+        <div class="calendar-card">
+
+            <div class="d-flex justify-content-between mb-3">
+
+                <h4>
+                    Upcoming Hearings
+                </h4>
+
+                <button
+                    class="btn btn-dark btn-sm"
+                    onclick="loadUpcomingHearings()"
+                >
+                    Refresh
+                </button>
+
+            </div>
+
+            <div id="upcomingHearings"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div
+class="modal fade"
+id="scheduleModal"
+tabindex="-1"
+>
+
+<div class="modal-dialog">
+
+<div class="modal-content">
+
+<div class="modal-header">
+
+<h5
+class="modal-title"
+id="modalTitle"
+>
+Schedule Hearing
+</h5>
+
+<button
+type="button"
+class="btn-close"
+data-bs-dismiss="modal"
+></button>
+
+</div>
+
+<div class="modal-body">
+
+<input
+type="hidden"
+id="hearing-id"
+>
+
+<div class="mb-3">
+
+<label>Case ID</label>
+
+<input
+type="number"
+id="case-id"
+class="form-control"
+>
+
+</div>
+
+<div class="mb-3">
+
+<label>Hearing Date</label>
+
+<input
+type="datetime-local"
+id="hearing-date"
+class="form-control"
+>
+
+</div>
+
+<div class="mb-3">
+
+<label>Location</label>
+
+<input
+type="text"
+id="location"
+class="form-control"
+>
+
+</div>
+
+<div class="mb-3">
+
+<label>Status</label>
+
+<select
+id="status"
+class="form-select"
+>
+
+<option value="Scheduled">
+Scheduled
+</option>
+
+<option value="Completed">
+Completed
+</option>
+
+<option value="Cancelled">
+Cancelled
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+<div class="modal-footer">
+
+<button
+class="btn btn-primary"
+onclick="saveHearing()"
+>
+Save Hearing
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<script>
+
+if(
+    !localStorage.getItem(
+        "access_token"
+    )
+){
+    window.location.href = "/"
+}
+
+
+function getAuthHeaders(){
+
+    const token =
+    localStorage.getItem(
+        "access_token"
+    )
+
+    return {
+
+        "Authorization":
+        `Bearer ${token}`,
+
+        "Content-Type":
+        "application/json"
+    }
+}
+
+
+let calendar
+
+
+document.addEventListener(
+"DOMContentLoaded",
+function(){
+
+    initializeCalendar()
+
+    loadUpcomingHearings()
+}
+)
+
+
+function initializeCalendar(){
+
+    const calendarEl =
+    document.getElementById("calendar")
+
+    calendar =
+    new FullCalendar.Calendar(
+
+        calendarEl,
+
+        {
+
+            initialView:"dayGridMonth",
+
+            height:650,
+
+            headerToolbar:{
+                left:"prev,next today",
+                center:"title",
+                right:""
+            },
+
+            events: async function(
+                fetchInfo,
+                successCallback,
+                failureCallback
+            ){
+
+                try{
+
+                    const month =
+                    fetchInfo.start.getMonth()+1
+
+                    const year =
+                    fetchInfo.start.getFullYear()
+
+                    const response =
+                    await fetch(
+
+                        `/hearings/calendar?month=${month}&year=${year}`,
+
+                        {
+
+                            headers:getAuthHeaders()
+                        }
+                    )
+
+                    if(!response.ok){
+
+                        throw new Error(
+                            "Calendar fetch failed"
+                        )
+                    }
+
+                    const data =
+                    await response.json()
+
+                    successCallback(data)
+
+                }catch(error){
+
+                    console.log(error)
+
+                    failureCallback(error)
+                }
+            },
+
+            eventClick:function(info){
+
+                const event = info.event
+
+                openEditModal({
+
+                    id:event.id,
+
+                    case_id:
+                    event.extendedProps.case_id,
+
+                    hearing_date:
+                    event.start.toISOString(),
+
+                    location:
+                    event.extendedProps.location,
+
+                    status:
+                    event.extendedProps.status
+                })
+            }
+        }
+    )
+
+    calendar.render()
+}
+
+
+
+async function loadUpcomingHearings(){
+
+    try{
+
+        const response =
+        await fetch(
+
+            "/hearings/upcoming",
+
+            {
+
+                headers:getAuthHeaders()
+            }
+        )
+
+        if(!response.ok){
+
+            throw new Error(
+                "Failed loading hearings"
+            )
+        }
+
+        const hearings =
+        await response.json()
+
+        const container =
+        document.getElementById(
+            "upcomingHearings"
+        )
+
+        container.innerHTML = ""
+
+        if(hearings.length === 0){
+
+            container.innerHTML = `
+
+            <div class="text-muted">
+
+                No upcoming hearings
+
+            </div>
+            `
+
+            return
+        }
+
+        hearings.forEach(hearing=>{
+
+            container.innerHTML += `
+
+            <div class="hearing-card">
+
+                <h5>
+
+                    ${hearing.title}
+
+                </h5>
+
+                <p>
+
+                    📍 ${hearing.location}
+
+                </p>
+
+                <small>
+
+                    ${new Date(
+                        hearing.hearing_date
+                    ).toLocaleString()}
+
+                </small>
+
+                <div class="mt-2">
+
+                    <span class="badge bg-primary">
+
+                        ${hearing.status}
+
+                    </span>
+
+                </div>
+
+                <div class="mt-3 d-flex gap-2">
+
+                    <button
+
+                    class="btn btn-sm btn-primary"
+
+                    onclick="editUpcoming(${hearing.id})"
+                    >
+
+                    Edit
+
+                    </button>
+
+                    <button
+
+                    class="btn btn-sm btn-danger"
+
+                    onclick="deleteHearing(${hearing.id})"
+                    >
+
+                    Delete
+
+                    </button>
+
+                </div>
+
+            </div>
+            `
+        })
+
+    }catch(error){
+
+        console.log(error)
+
+        alert(
+            "Could not load hearings"
+        )
+    }
+}
+
+
+
+function openCreateModal(){
+
+    document.getElementById(
+        "modalTitle"
+    ).innerText =
+    "Schedule Hearing"
+
+    document.getElementById(
+        "hearing-id"
+    ).value = ""
+
+    document.getElementById(
+        "case-id"
+    ).value = ""
+
+    document.getElementById(
+        "hearing-date"
+    ).value = ""
+
+    document.getElementById(
+        "location"
+    ).value = ""
+
+    document.getElementById(
+        "status"
+    ).value = "Scheduled"
+
+    new bootstrap.Modal(
+
+        document.getElementById(
+            "scheduleModal"
+        )
+
+    ).show()
+}
+
+
+
+function openEditModal(data){
+
+    document.getElementById(
+        "modalTitle"
+    ).innerText =
+    "Edit Hearing"
+
+    document.getElementById(
+        "hearing-id"
+    ).value =
+    data.id
+
+    document.getElementById(
+        "case-id"
+    ).value =
+    data.case_id
+
+    document.getElementById(
+        "hearing-date"
+    ).value =
+    data.hearing_date.slice(0,16)
+
+    document.getElementById(
+        "location"
+    ).value =
+    data.location
+
+    document.getElementById(
+        "status"
+    ).value =
+    data.status
+
+    new bootstrap.Modal(
+
+        document.getElementById(
+            "scheduleModal"
+        )
+
+    ).show()
+}
+
+
+
+async function saveHearing(){
+
+    const hearingId =
+    document.getElementById(
+        "hearing-id"
+    ).value
+
+    const payload = {
+
+        case_id:parseInt(
+
+            document.getElementById(
+                "case-id"
+            ).value
+        ),
+
+        hearing_date:
+
+        document.getElementById(
+            "hearing-date"
+        ).value,
+
+        location:
+
+        document.getElementById(
+            "location"
+        ).value,
+
+        status:
+
+        document.getElementById(
+            "status"
+        ).value
+    }
+
+    try{
+
+        let url = "/hearings/"
+        let method = "POST"
+
+        if(hearingId){
+
+            url =
+            `/hearings/${hearingId}`
+
+            method = "PUT"
+        }
+
+        const response =
+        await fetch(
+
+            url,
+
+            {
+
+                method:method,
+
+                headers:getAuthHeaders(),
+
+                body:JSON.stringify(payload)
+            }
+        )
+
+        const data =
+        await response.json()
+
+        if(!response.ok){
+
+            alert(
+
+                data.detail ||
+                "Error saving hearing"
+            )
+
+            return
+        }
+
+        bootstrap.Modal
+
+        .getInstance(
+
+            document.getElementById(
+                "scheduleModal"
+            )
+
+        )
+
+        .hide()
+
+        calendar.refetchEvents()
+
+        await loadUpcomingHearings()
+
+        alert(data.message)
+
+    }catch(error){
+
+        console.log(error)
+
+        alert("Failed to save hearing")
+    }
+}
+
+
+
+async function deleteHearing(id){
+
+    if(!confirm("Delete hearing?")){
+
+        return
+    }
+
+    try{
+
+        const response =
+        await fetch(
+
+            `/hearings/${id}`,
+
+            {
+
+                method:"DELETE",
+
+                headers:getAuthHeaders()
+            }
+        )
+
+        const data =
+        await response.json()
+
+        alert(data.message)
+
+        calendar.refetchEvents()
+
+        await loadUpcomingHearings()
+
+    }catch(error){
+
+        console.log(error)
+
+        alert("Delete failed")
+    }
+}
+
+
+
+async function editUpcoming(id){
+
+    try{
+
+        const response =
+        await fetch(
+
+            "/hearings/",
+
+            {
+
+                headers:getAuthHeaders()
+            }
+        )
+
+        const hearings =
+        await response.json()
+
+        const hearing =
+        hearings.find(
+            h => h.id == id
+        )
+
+        if(!hearing){
+
+            alert("Hearing not found")
+
+            return
+        }
+
+        openEditModal(hearing)
+
+    }catch(error){
+
+        console.log(error)
+    }
+}
+
+</script>
+{% endblock %}

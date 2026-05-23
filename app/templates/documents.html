@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+
+    <!-- HEADER -->
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+
+        <div>
+
+            <h2 class="fw-bold">
+
+                Document Center
+
+            </h2>
+
+            <small class="text-muted">
+
+                Upload and manage legal documents
+
+            </small>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- UPLOAD CARD -->
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <div class="col-md-3">
+
+                    <input
+                        type="number"
+                        id="caseId"
+                        class="form-control"
+                        placeholder="Case ID"
+                    >
+
+                </div>
+
+                <div class="col-md-6">
+
+                    <input
+                        type="file"
+                        id="documentFile"
+                        class="form-control"
+                    >
+
+                </div>
+
+                <div class="col-md-3">
+
+                    <button
+                        class="btn btn-primary w-100"
+                        onclick="uploadDocument()"
+                    >
+
+                        <i class="fa-solid fa-upload"></i>
+
+                        Upload Document
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- DOCUMENT LIST -->
+
+    <div class="card border-0 shadow-sm rounded-4">
+
+        <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+
+                <h5 class="fw-bold">
+
+                    Case Documents
+
+                </h5>
+
+                <button
+                    class="btn btn-outline-primary"
+                    onclick="loadDocuments()"
+                >
+
+                    Refresh
+
+                </button>
+
+            </div>
+
+            <div id="documentContainer"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+const token =
+localStorage.getItem(
+    "access_token"
+)
+
+
+
+// CHECK LOGIN
+if(!token){
+
+    window.location.href = "/"
+}
+
+
+
+// UPLOAD DOCUMENT
+async function uploadDocument(){
+
+    const caseId =
+    document.getElementById(
+        "caseId"
+    ).value
+
+
+    const file =
+    document.getElementById(
+        "documentFile"
+    ).files[0]
+
+
+    if(!caseId || !file){
+
+        alert(
+            "Please select file and case ID"
+        )
+
+        return
+    }
+
+
+    const formData =
+    new FormData()
+
+    formData.append(
+        "file",
+        file
+    )
+
+
+    try{
+
+        const response =
+        await fetch(
+
+            `http://127.0.0.1:8000/documents/${caseId}`,
+
+            {
+
+                method:"POST",
+
+                headers:{
+                    "Authorization":
+                    `Bearer ${token}`
+                },
+
+                body:formData
+            }
+        )
+
+
+        const data =
+        await response.json()
+
+
+        if(!response.ok){
+
+            alert(
+                data.detail ||
+                "Upload failed"
+            )
+
+            return
+        }
+
+
+        alert(
+            "Document uploaded successfully"
+        )
+
+        loadDocuments()
+
+    }
+
+    catch(error){
+
+        console.log(error)
+
+        alert(
+            "Upload error"
+        )
+    }
+}
+
+
+
+// LOAD DOCUMENTS
+async function loadDocuments(){
+
+    const caseId =
+    document.getElementById(
+        "caseId"
+    ).value
+
+
+    if(!caseId){
+        return
+    }
+
+
+    try{
+
+        const response =
+        await fetch(
+
+            `http://127.0.0.1:8000/documents/${caseId}`,
+
+            {
+
+                headers:{
+                    "Authorization":
+                    `Bearer ${token}`
+                }
+            }
+        )
+
+
+        const documents =
+        await response.json()
+
+
+        const container =
+        document.getElementById(
+            "documentContainer"
+        )
+
+        container.innerHTML = ""
+
+
+        if(documents.length === 0){
+
+            container.innerHTML = `
+
+                <div class="alert alert-info rounded-4">
+
+                    No documents uploaded
+
+                </div>
+
+            `
+
+            return
+        }
+
+
+        documents.forEach(doc=>{
+
+            container.innerHTML += `
+
+                <div class="border rounded-4 p-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+
+                    <div>
+
+                        <h6 class="fw-bold mb-1">
+
+                            ${doc.filename}
+
+                        </h6>
+
+                        <small class="text-muted">
+
+                            Document ID:
+                            ${doc.id}
+
+                        </small>
+
+                    </div>
+
+                    <div class="d-flex gap-2">
+
+                        <a
+                            href="http://127.0.0.1:8000/documents/download/${doc.id}"
+                            target="_blank"
+                            class="btn btn-primary"
+                        >
+
+                            <i class="fa-solid fa-download"></i>
+
+                            Download
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            `
+        })
+
+    }
+
+    catch(error){
+
+        console.log(error)
+    }
+}
+
+</script>
+
+{% endblock %}

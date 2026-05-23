@@ -1,0 +1,846 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+                Case Management
+            </h2>
+
+            <small class="text-muted">
+                Manage all legal cases dynamically
+            </small>
+
+        </div>
+
+        <div class="d-flex gap-2">
+
+            <button
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#caseModal"
+                onclick="openCreateModal()"
+            >
+
+                <i class="fa-solid fa-plus"></i>
+
+                New Case
+
+            </button>
+
+            <button
+                class="btn btn-dark"
+                onclick="loadCases()"
+            >
+
+                <i class="fa-solid fa-rotate"></i>
+
+                Refresh
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- Filters -->
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+
+                    <input
+                        type="text"
+                        id="searchInput"
+                        class="form-control form-control-lg"
+                        placeholder="Search cases..."
+                        onkeyup="searchCases()"
+                    >
+
+                </div>
+
+                <div class="col-md-3">
+
+                    <select
+                        id="statusFilter"
+                        class="form-select form-select-lg"
+                        onchange="filterCases()"
+                    >
+
+                        <option value="">
+                            All Status
+                        </option>
+
+                        <option value="Active">
+                            Active
+                        </option>
+
+                        <option value="Closed">
+                            Closed
+                        </option>
+
+                        <option value="Pending">
+                            Pending
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Table -->
+
+    <div class="card border-0 shadow-sm rounded-4">
+
+        <div class="card-body table-responsive">
+
+            <table class="table align-middle">
+
+                <thead>
+
+                    <tr>
+
+                        <th>ID</th>
+                        <th>Case Title</th>
+                        <th>Status</th>
+                        <th>Lawyer</th>
+                        <th>Client</th>
+                        <th>Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="casesTable">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- Modal -->
+
+<div
+    class="modal fade"
+    id="caseModal"
+    tabindex="-1"
+>
+
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content border-0 rounded-4">
+
+            <div class="modal-header">
+
+                <h5
+                    class="modal-title"
+                    id="modalTitle"
+                >
+
+                    Create Case
+
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                >
+
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <input
+                    type="hidden"
+                    id="caseId"
+                >
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Case Title
+                        </label>
+
+                        <input
+                            type="text"
+                            id="caseTitle"
+                            class="form-control"
+                        >
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Status
+                        </label>
+
+                        <select
+                            id="caseStatus"
+                            class="form-select"
+                        >
+
+                            <option value="Active">
+                                Active
+                            </option>
+
+                            <option value="Closed">
+                                Closed
+                            </option>
+
+                            <option value="Pending">
+                                Pending
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Lawyer ID
+                        </label>
+
+                        <input
+                            type="number"
+                            id="lawyerId"
+                            class="form-control"
+                        >
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Client ID
+                        </label>
+
+                        <input
+                            type="number"
+                            id="clientId"
+                            class="form-control"
+                        >
+
+                    </div>
+
+                    <div class="col-12">
+
+                        <label class="form-label">
+                            Description
+                        </label>
+
+                        <textarea
+                            id="caseDescription"
+                            rows="4"
+                            class="form-control"
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    class="btn btn-primary"
+                    id="saveBtn"
+                    onclick="saveCase()"
+                >
+
+                    Save Case
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const token = localStorage.getItem(
+    "access_token"
+)
+
+
+// CHECK LOGIN
+if(!token){
+
+    window.location.href = "/"
+
+}
+
+
+let allCases = []
+
+
+// LOAD CASES
+async function loadCases(){
+
+    try{
+
+        const response = await fetch(
+
+            "/cases/",
+
+            {
+
+                headers:{
+                    "Authorization":
+                    `Bearer ${token}`
+                }
+
+            }
+        )
+
+        if(response.status === 401){
+
+            localStorage.removeItem(
+                "access_token"
+            )
+
+            window.location.href = "/"
+
+            return
+        }
+
+        const data = await response.json()
+
+        allCases = data
+
+        renderCases(data)
+
+    }
+
+    catch(error){
+
+        console.log(error)
+
+        showToast(
+            "Failed to load cases",
+            "danger"
+        )
+
+    }
+
+}
+
+
+
+// RENDER TABLE
+function renderCases(cases){
+
+    const table =
+        document.getElementById(
+            "casesTable"
+        )
+
+    table.innerHTML = ""
+
+    if(cases.length === 0){
+
+        table.innerHTML = `
+
+            <tr>
+
+                <td colspan="6"
+                    class="text-center text-muted">
+
+                    No cases found
+
+                </td>
+
+            </tr>
+
+        `
+
+        return
+    }
+
+    cases.forEach(c=>{
+
+        let badge = "bg-warning"
+
+        if(c.case_status === "Active"){
+
+            badge = "bg-success"
+
+        }
+
+        else if(c.case_status === "Closed"){
+
+            badge = "bg-danger"
+
+        }
+
+        table.innerHTML += `
+
+            <tr>
+
+                <td>#${c.id}</td>
+
+                <td>${c.case_title}</td>
+
+                <td>
+
+                    <span class="badge ${badge}">
+
+                        ${c.case_status}
+
+                    </span>
+
+                </td>
+
+                <td>${c.lawyer_id}</td>
+
+                <td>${c.client_id}</td>
+
+                <td>
+
+                    <div class="d-flex gap-2">
+
+                        <button
+                            class="btn btn-warning btn-sm"
+                            onclick="editCase(${c.id})"
+                        >
+
+                            <i class="fa-solid fa-pen"></i>
+
+                        </button>
+
+                        <button
+                            class="btn btn-danger btn-sm"
+                            onclick="deleteCase(${c.id})"
+                        >
+
+                            <i class="fa-solid fa-trash"></i>
+
+                        </button>
+
+                    </div>
+
+                </td>
+
+            </tr>
+
+        `
+
+    })
+
+}
+
+
+
+// CREATE MODAL
+function openCreateModal(){
+
+    document.getElementById(
+        "modalTitle"
+    ).innerText = "Create Case"
+
+    document.getElementById(
+        "caseId"
+    ).value = ""
+
+    document.getElementById(
+        "caseTitle"
+    ).value = ""
+
+    document.getElementById(
+        "caseDescription"
+    ).value = ""
+
+    document.getElementById(
+        "caseStatus"
+    ).value = "Active"
+
+    document.getElementById(
+        "lawyerId"
+    ).value = ""
+
+    document.getElementById(
+        "clientId"
+    ).value = ""
+
+}
+
+
+
+// EDIT CASE
+function editCase(id){
+
+    const c = allCases.find(
+        item => item.id === id
+    )
+
+    if(!c) return
+
+    document.getElementById(
+        "modalTitle"
+    ).innerText = "Edit Case"
+
+    document.getElementById(
+        "caseId"
+    ).value = c.id
+
+    document.getElementById(
+        "caseTitle"
+    ).value = c.case_title
+
+    document.getElementById(
+        "caseDescription"
+    ).value = c.case_description
+
+    document.getElementById(
+        "caseStatus"
+    ).value = c.case_status
+
+    document.getElementById(
+        "lawyerId"
+    ).value = c.lawyer_id
+
+    document.getElementById(
+        "clientId"
+    ).value = c.client_id
+
+    new bootstrap.Modal(
+        document.getElementById(
+            "caseModal"
+        )
+    ).show()
+
+}
+
+
+
+// SAVE CASE
+async function saveCase(){
+
+    if(
+        !document.getElementById("caseTitle").value ||
+
+        !document.getElementById("lawyerId").value ||
+
+        !document.getElementById("clientId").value
+    ){
+
+        showToast(
+            "Please fill all required fields",
+            "warning"
+        )
+
+        return
+    }
+
+    const saveBtn =
+        document.getElementById(
+            "saveBtn"
+        )
+
+    saveBtn.disabled = true
+
+    saveBtn.innerHTML =
+        "Saving..."
+
+
+    const caseId =
+        document.getElementById(
+            "caseId"
+        ).value
+
+    const payload = {
+
+        case_title:
+            document.getElementById(
+                "caseTitle"
+            ).value,
+
+        case_description:
+            document.getElementById(
+                "caseDescription"
+            ).value,
+
+        case_status:
+            document.getElementById(
+                "caseStatus"
+            ).value,
+
+        lawyer_id:parseInt(
+            document.getElementById(
+                "lawyerId"
+            ).value
+        ),
+
+        client_id:parseInt(
+            document.getElementById(
+                "clientId"
+            ).value
+        )
+
+    }
+
+    let url = "/cases/"
+    let method = "POST"
+
+    if(caseId){
+
+        url += caseId
+
+        method = "PUT"
+
+    }
+
+    try{
+
+        const response = await fetch(
+
+            url,
+
+            {
+
+                method:method,
+
+                headers:{
+
+                    "Content-Type":
+                    "application/json",
+
+                    "Authorization":
+                    `Bearer ${token}`
+
+                },
+
+                body:JSON.stringify(payload)
+
+            }
+        )
+
+        if(response.ok){
+
+            bootstrap.Modal.getInstance(
+                document.getElementById(
+                    "caseModal"
+                )
+            ).hide()
+
+            showToast(
+                "Case saved successfully",
+                "success"
+            )
+
+            await loadCases()
+
+        }
+
+        else{
+
+            showToast(
+                "Operation failed",
+                "danger"
+            )
+
+        }
+
+    }
+
+    catch(error){
+
+        showToast(
+            "Server error",
+            "danger"
+        )
+
+    }
+
+    saveBtn.disabled = false
+
+    saveBtn.innerHTML =
+        "Save Case"
+
+}
+
+
+
+// DELETE CASE
+async function deleteCase(id){
+
+    if(!confirm(
+        "Delete this case?"
+    )) return
+
+    try{
+
+        const response = await fetch(
+
+            `/cases/${id}`,
+
+            {
+
+                method:"DELETE",
+
+                headers:{
+                    "Authorization":
+                    `Bearer ${token}`
+                }
+
+            }
+        )
+
+        if(response.ok){
+
+            showToast(
+                "Case deleted",
+                "success"
+            )
+
+            await loadCases()
+
+        }
+
+    }
+
+    catch(error){
+
+        showToast(
+            "Delete failed",
+            "danger"
+        )
+
+    }
+
+}
+
+
+
+// SEARCH
+function searchCases(){
+
+    const search =
+        document.getElementById(
+            "searchInput"
+        ).value.toLowerCase()
+
+    const filtered = allCases.filter(c=>
+
+        c.case_title.toLowerCase()
+        .includes(search)
+
+    )
+
+    renderCases(filtered)
+
+}
+
+
+
+// FILTER
+function filterCases(){
+
+    const status =
+        document.getElementById(
+            "statusFilter"
+        ).value
+
+    if(!status){
+
+        renderCases(allCases)
+
+        return
+
+    }
+
+    const filtered = allCases.filter(
+
+        c=>c.case_status === status
+
+    )
+
+    renderCases(filtered)
+
+}
+
+
+
+// TOAST
+function showToast(message,type){
+
+    const toast =
+        document.createElement(
+            "div"
+        )
+
+    toast.className =
+        `toast align-items-center text-bg-${type} border-0 show position-fixed bottom-0 end-0 m-4`
+
+    toast.style.zIndex = "9999"
+
+    toast.innerHTML = `
+
+        <div class="d-flex">
+
+            <div class="toast-body">
+
+                ${message}
+
+            </div>
+
+        </div>
+
+    `
+
+    document.body.appendChild(
+        toast
+    )
+
+    setTimeout(()=>{
+
+        toast.remove()
+
+    },3000)
+
+}
+
+
+
+// INITIAL LOAD
+loadCases()
+
+</script>
+
+{% endblock %}

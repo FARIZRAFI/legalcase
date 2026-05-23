@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+
+    <!-- HEADER -->
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+
+                Case Timeline
+
+            </h2>
+
+            <small class="text-muted">
+
+                Full activity history & audit trail
+
+            </small>
+
+        </div>
+
+        <div class="d-flex gap-2">
+
+            <input
+                type="number"
+                id="caseIdInput"
+                class="form-control"
+                placeholder="Enter Case ID"
+                style="width:180px;"
+            >
+
+            <button
+                class="btn btn-primary"
+                onclick="loadTimeline()"
+            >
+
+                <i class="fa-solid fa-clock-rotate-left"></i>
+
+                Load Timeline
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- TIMELINE -->
+
+    <div id="timelineContainer">
+
+        <div class="alert alert-info rounded-4">
+
+            Enter a Case ID to load timeline
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<style>
+
+.timeline{
+
+    position:relative;
+
+    margin-left:20px;
+
+    padding-left:30px;
+
+    border-left:4px solid #2563eb;
+}
+
+
+.timeline-item{
+
+    position:relative;
+
+    margin-bottom:30px;
+}
+
+
+.timeline-dot{
+
+    width:18px;
+
+    height:18px;
+
+    border-radius:50%;
+
+    background:#2563eb;
+
+    position:absolute;
+
+    left:-40px;
+
+    top:10px;
+
+    border:4px solid white;
+
+    box-shadow:0 0 0 3px #2563eb;
+}
+
+
+.timeline-card{
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:20px;
+
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+
+
+.timeline-title{
+
+    font-weight:bold;
+
+    font-size:18px;
+}
+
+
+.timeline-time{
+
+    font-size:13px;
+
+    color:#64748b;
+}
+
+
+.timeline-description{
+
+    margin-top:10px;
+
+    color:#334155;
+
+    white-space:pre-line;
+}
+
+</style>
+
+
+
+<script>
+
+const token =
+localStorage.getItem(
+    "access_token"
+)
+
+
+// CHECK LOGIN
+if(!token){
+
+    window.location.href = "/"
+}
+
+
+
+// LOAD TIMELINE
+async function loadTimeline(){
+
+    const caseId =
+    document.getElementById(
+        "caseIdInput"
+    ).value
+
+
+    if(!caseId){
+
+        alert(
+            "Please enter case ID"
+        )
+
+        return
+    }
+
+
+    try{
+
+        const response =
+        await fetch(
+
+            `http://127.0.0.1:8000/timeline/${caseId}`,
+
+            {
+
+                headers:{
+
+                    "Authorization":
+                    `Bearer ${token}`
+                }
+            }
+        )
+
+
+        if(!response.ok){
+
+            throw new Error(
+                "Timeline not found"
+            )
+        }
+
+
+        const data =
+        await response.json()
+
+
+        renderTimeline(data)
+
+    }
+
+    catch(error){
+
+        console.log(error)
+
+        document.getElementById(
+            "timelineContainer"
+        ).innerHTML = `
+
+            <div class="alert alert-danger rounded-4">
+
+                Failed to load timeline
+
+            </div>
+
+        `
+    }
+}
+
+
+
+// RENDER TIMELINE
+function renderTimeline(data){
+
+    const container =
+    document.getElementById(
+        "timelineContainer"
+    )
+
+
+    if(
+
+        !data.timeline ||
+
+        data.timeline.length === 0
+    ){
+
+        container.innerHTML = `
+
+            <div class="alert alert-warning rounded-4">
+
+                No timeline events found
+
+            </div>
+
+        `
+
+        return
+    }
+
+
+    let html = `
+
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+
+            <div class="card-body">
+
+                <h4 class="fw-bold">
+
+                    ${data.case_title}
+
+                </h4>
+
+                <small class="text-muted">
+
+                    Case ID: ${data.case_id}
+
+                </small>
+
+            </div>
+
+        </div>
+
+        <div class="timeline">
+
+    `
+
+
+    data.timeline.forEach(event=>{
+
+        html += `
+
+            <div class="timeline-item">
+
+                <div class="timeline-dot"></div>
+
+                <div class="timeline-card">
+
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+
+                        <div>
+
+                            <div class="timeline-title">
+
+                                ${event.title}
+
+                            </div>
+
+                        </div>
+
+                        <div class="timeline-time">
+
+                            ${new Date(
+                                event.created_at
+                            ).toLocaleString()}
+
+                        </div>
+
+                    </div>
+
+                    <div class="timeline-description">
+
+                        ${event.description}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        `
+    })
+
+
+    html += `</div>`
+
+    container.innerHTML = html
+}
+
+</script>
+
+{% endblock %}

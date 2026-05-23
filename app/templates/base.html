@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Legal SaaS</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <style>
+
+        body{
+            margin:0;
+            background:#f1f5f9;
+            font-family:'Segoe UI',sans-serif;
+        }
+
+        .sidebar{
+
+            width:260px;
+
+            height:100vh;
+
+            background:#0f172a;
+
+            position:fixed;
+
+            left:0;
+
+            top:0;
+
+            padding:25px 20px;
+
+            overflow-y:auto;
+
+            transition:0.3s;
+
+            z-index:1000;
+        }
+
+        .sidebar h3{
+
+            color:white;
+
+            margin-bottom:40px;
+
+            font-weight:bold;
+        }
+
+        .sidebar a{
+
+            display:flex;
+
+            align-items:center;
+
+            gap:12px;
+
+            color:#cbd5e1;
+
+            text-decoration:none;
+
+            padding:14px 16px;
+
+            border-radius:14px;
+
+            margin-bottom:10px;
+
+            transition:0.3s;
+        }
+
+        .sidebar a:hover{
+
+            background:#2563eb;
+
+            color:white;
+        }
+
+        .sidebar a.active{
+
+            background:#2563eb;
+
+            color:white;
+        }
+
+        .main-content{
+
+            margin-left:280px;
+
+            padding:30px;
+
+            transition:0.3s;
+        }
+
+        .topbar{
+
+            background:white;
+
+            padding:18px 25px;
+
+            border-radius:18px;
+
+            margin-bottom:25px;
+
+            box-shadow:0 4px 12px rgba(0,0,0,0.08);
+
+            display:flex;
+
+            justify-content:space-between;
+
+            align-items:center;
+        }
+
+        .menu-btn{
+
+            display:none;
+
+            background:#2563eb;
+
+            border:none;
+
+            color:white;
+
+            padding:10px 14px;
+
+            border-radius:10px;
+        }
+
+        .profile-box{
+
+            display:flex;
+
+            align-items:center;
+
+            gap:12px;
+        }
+
+        .profile-avatar{
+
+            width:42px;
+
+            height:42px;
+
+            border-radius:50%;
+
+            background:#2563eb;
+
+            color:white;
+
+            display:flex;
+
+            align-items:center;
+
+            justify-content:center;
+
+            font-weight:bold;
+        }
+
+        #notification-panel{
+
+            width:350px;
+
+            position:absolute;
+
+            right:0;
+
+            top:55px;
+
+            display:none;
+
+            z-index:999;
+
+            border:none;
+
+            border-radius:18px;
+        }
+
+        .notification-item{
+
+            border-bottom:1px solid #e2e8f0;
+
+            padding-bottom:12px;
+
+            margin-bottom:12px;
+        }
+
+        .notification-item:last-child{
+
+            border:none;
+
+            margin-bottom:0;
+        }
+
+        .toast{
+
+            min-width:300px;
+        }
+
+        @media(max-width:992px){
+
+            .sidebar{
+
+                left:-280px;
+            }
+
+            .sidebar.active{
+
+                left:0;
+            }
+
+            .main-content{
+
+                margin-left:0;
+            }
+
+            .menu-btn{
+
+                display:block;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+<!-- SIDEBAR -->
+
+<div class="sidebar" id="sidebar">
+
+    <h3>
+        Legal SaaS
+    </h3>
+
+    <a href="/dashboard-page">
+
+        <i class="fa-solid fa-chart-line"></i>
+
+        Dashboard
+
+    </a>
+
+    <a href="/cases-page">
+
+        <i class="fa-solid fa-scale-balanced"></i>
+
+        Cases
+
+    </a>
+
+    <a href="/hearings-page">
+
+        <i class="fa-solid fa-gavel"></i>
+
+        Hearings
+
+    </a>
+
+    <a href="/documents-page">
+
+        <i class="fa-solid fa-file-pdf"></i>
+
+        Documents
+
+    </a>
+
+    <a href="/notifications-page">
+
+        <i class="fa-solid fa-bell"></i>
+
+        Notifications
+
+    </a>
+
+    <a href="/timeline-page">
+
+        <i class="fa-solid fa-clock-rotate-left"></i>
+
+        Timeline
+
+    </a>
+
+    <a href="/" onclick="logoutUser()">
+
+        <i class="fa-solid fa-right-from-bracket"></i>
+
+        Logout
+
+    </a>
+
+</div>
+
+
+
+<!-- MAIN CONTENT -->
+
+<div class="main-content">
+
+
+    <!-- TOPBAR -->
+
+    <div class="topbar">
+
+        <button
+            class="menu-btn"
+            onclick="toggleSidebar()"
+        >
+
+            <i class="fa-solid fa-bars"></i>
+
+        </button>
+
+        <div>
+
+            <h5 class="mb-0 fw-bold">
+                Legal Management System
+            </h5>
+
+            <small class="text-muted">
+                Enterprise Legal SaaS Platform
+            </small>
+
+        </div>
+
+
+        <!-- RIGHT SECTION -->
+
+        <div class="d-flex align-items-center gap-4">
+
+
+            <!-- NOTIFICATION BELL -->
+
+            <div class="position-relative">
+
+                <button
+                    class="btn btn-light position-relative"
+                    onclick="toggleNotifications()"
+                >
+
+                    <i class="fa-solid fa-bell"></i>
+
+                    <span
+                        id="notification-count"
+                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                    >
+
+                        0
+
+                    </span>
+
+                </button>
+
+
+                <!-- NOTIFICATION DROPDOWN -->
+
+                <div
+                    id="notification-panel"
+                    class="card shadow"
+                >
+
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between mb-3">
+
+                            <h5 class="fw-bold mb-0">
+                                Notifications
+                            </h5>
+
+                            <span class="badge bg-primary">
+                                Live
+                            </span>
+
+                        </div>
+
+                        <div
+                            id="notification-list"
+                            style="
+                                max-height:400px;
+                                overflow-y:auto;
+                            "
+                        >
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PROFILE -->
+
+            <div class="profile-box">
+
+                <div class="profile-avatar">
+
+                    A
+
+                </div>
+
+                <div>
+
+                    <strong>
+                        Admin
+                    </strong>
+
+                    <br>
+
+                    <small class="text-muted">
+                        Online
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- DYNAMIC CONTENT -->
+
+    {% block content %}
+    {% endblock %}
+
+</div>
+
+
+
+<script>
+
+function toggleSidebar(){
+
+    document.getElementById(
+        "sidebar"
+    ).classList.toggle(
+        "active"
+    )
+}
+
+
+
+function logoutUser(){
+
+    localStorage.clear()
+
+    window.location.href = "/"
+}
+
+
+
+const socket = new WebSocket(
+    "ws://127.0.0.1:8000/notifications/ws"
+)
+
+
+
+socket.onmessage = function(event){
+
+    loadNotifications()
+
+    showToast(event.data)
+}
+
+
+
+function toggleNotifications(){
+
+    const panel = document.getElementById(
+        "notification-panel"
+    )
+
+    if(panel.style.display === "none"){
+
+        panel.style.display = "block"
+
+        loadNotifications()
+    }
+    else{
+
+        panel.style.display = "none"
+    }
+}
+
+
+
+async function loadNotifications(){
+
+    const token = localStorage.getItem(
+        "access_token"
+    )
+
+    if(!token){
+        return
+    }
+
+    try{
+
+        const response = await fetch(
+
+            "http://127.0.0.1:8000/notifications/",
+
+            {
+
+                headers:{
+                    "Authorization":
+                    `Bearer ${token}`
+                }
+            }
+        )
+
+        const data = await response.json()
+
+        document.getElementById(
+            "notification-count"
+        ).innerText = data.length
+
+        const list = document.getElementById(
+            "notification-list"
+        )
+
+        list.innerHTML = ""
+
+
+        if(data.length === 0){
+
+            list.innerHTML = `
+
+                <div class="text-muted">
+
+                    No notifications
+
+                </div>
+
+            `
+
+            return
+        }
+
+
+        data.reverse().forEach((notification)=>{
+
+            list.innerHTML += `
+
+                <div class="notification-item">
+
+                    <div class="d-flex justify-content-between">
+
+                        <strong>
+
+                            ${notification.type}
+
+                        </strong>
+
+                        <small class="text-muted">
+
+                            #${notification.id}
+
+                        </small>
+
+                    </div>
+
+                    <p class="mb-1 mt-2">
+
+                        ${notification.message}
+
+                    </p>
+
+                </div>
+
+            `
+        })
+
+    }
+
+    catch(error){
+
+        console.log(error)
+    }
+}
+
+
+
+function showToast(message){
+
+    const toast = document.createElement(
+        "div"
+    )
+
+    toast.className =
+        "toast align-items-center text-bg-primary border-0 show position-fixed bottom-0 end-0 m-4"
+
+    toast.style.zIndex = "9999"
+
+    toast.innerHTML = `
+
+        <div class="d-flex">
+
+            <div class="toast-body">
+
+                ${message}
+
+            </div>
+
+            <button
+                type="button"
+                class="btn-close btn-close-white me-2 m-auto"
+                onclick="this.parentElement.parentElement.remove()"
+            ></button>
+
+        </div>
+
+    `
+
+    document.body.appendChild(toast)
+
+    setTimeout(()=>{
+
+        toast.remove()
+
+    },5000)
+}
+
+
+
+loadNotifications()
+
+</script>
+
+
+<script
+src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+</body>
+</html>

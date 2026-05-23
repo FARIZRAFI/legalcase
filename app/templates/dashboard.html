@@ -1,0 +1,690 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+                Dashboard
+            </h2>
+
+            <small class="text-muted">
+                Legal Case Management Analytics
+            </small>
+
+        </div>
+
+        <div class="d-flex gap-2">
+
+            <button
+                class="btn btn-primary"
+                onclick="refreshDashboard()"
+            >
+
+                <i class="fa-solid fa-rotate"></i>
+
+                Refresh
+
+            </button>
+
+            <button
+                class="btn btn-danger"
+                onclick="logout()"
+            >
+
+                <i class="fa-solid fa-right-from-bracket"></i>
+
+                Logout
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ANALYTICS CARDS -->
+
+    <div class="row g-4 mb-4">
+
+        <!-- TOTAL CASES -->
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+
+                        <div>
+
+                            <h6 class="text-muted">
+
+                                Total Cases
+
+                            </h6>
+
+                            <h2
+                                class="fw-bold"
+                                id="totalCases"
+                            >
+
+                                0
+
+                            </h2>
+
+                        </div>
+
+                        <div class="bg-primary text-white rounded-circle p-3">
+
+                            <i class="fa-solid fa-scale-balanced"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ACTIVE CASES -->
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+
+                        <div>
+
+                            <h6 class="text-muted">
+
+                                Active Cases
+
+                            </h6>
+
+                            <h2
+                                class="fw-bold text-success"
+                                id="activeCases"
+                            >
+
+                                0
+
+                            </h2>
+
+                        </div>
+
+                        <div class="bg-success text-white rounded-circle p-3">
+
+                            <i class="fa-solid fa-folder-open"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- CLOSED CASES -->
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+
+                        <div>
+
+                            <h6 class="text-muted">
+
+                                Closed Cases
+
+                            </h6>
+
+                            <h2
+                                class="fw-bold text-danger"
+                                id="closedCases"
+                            >
+
+                                0
+
+                            </h2>
+
+                        </div>
+
+                        <div class="bg-danger text-white rounded-circle p-3">
+
+                            <i class="fa-solid fa-folder-closed"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- HEARINGS -->
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+
+                        <div>
+
+                            <h6 class="text-muted">
+
+                                Hearings
+
+                            </h6>
+
+                            <h2
+                                class="fw-bold text-warning"
+                                id="totalHearings"
+                            >
+
+                                0
+
+                            </h2>
+
+                        </div>
+
+                        <div class="bg-warning text-white rounded-circle p-3">
+
+                            <i class="fa-solid fa-gavel"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- CHARTS -->
+
+    <div class="row g-4">
+
+        <!-- CHART -->
+
+        <div class="col-lg-8">
+
+            <div class="card border-0 shadow-sm rounded-4">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+
+                        <h5 class="fw-bold">
+
+                            Case Analytics
+
+                        </h5>
+
+                        <span class="badge bg-primary">
+
+                            Live Data
+
+                        </span>
+
+                    </div>
+
+                    <canvas
+                        id="caseChart"
+                        height="120"
+                    ></canvas>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ACTIVITY -->
+
+        <div class="col-lg-4">
+
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between mb-4">
+
+                        <h5 class="fw-bold">
+
+                            Recent Activity
+
+                        </h5>
+
+                        <button
+                            class="btn btn-sm btn-outline-primary"
+                            onclick="loadDashboard()"
+                        >
+
+                            Refresh
+
+                        </button>
+
+                    </div>
+
+                    <div id="activityFeed"></div>
+
+                    <hr class="my-4">
+
+                    <h5 class="fw-bold mb-3">
+                        Upcoming Hearings
+                    </h5>
+
+                    <div id="upcomingHearingsDashboard"></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- CHART JS -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<script>
+
+const token =
+localStorage.getItem(
+    "access_token"
+)
+
+
+// CHECK LOGIN
+if(!token){
+
+    window.location.href = "/"
+}
+
+
+let chartInstance = null
+
+
+
+// LOAD DASHBOARD
+async function loadDashboard(){
+
+    try{
+
+        const response =
+        await fetch(
+
+            "/dashboard/",
+
+            {
+
+                headers:{
+
+                    "Authorization":
+                    `Bearer ${token}`
+                }
+
+            }
+        )
+
+        if(!response.ok){
+
+            throw new Error(
+                "Unauthorized"
+            )
+        }
+
+        const data =
+        await response.json()
+
+
+        // UPDATE CARDS
+
+        document.getElementById(
+            "totalCases"
+        ).innerText =
+        data.total_cases
+
+
+        document.getElementById(
+            "activeCases"
+        ).innerText =
+        data.active_cases
+
+
+        document.getElementById(
+            "closedCases"
+        ).innerText =
+        data.closed_cases
+
+
+        document.getElementById(
+            "totalHearings"
+        ).innerText =
+        data.total_hearings
+
+
+        // LOAD CHART
+        loadChart(data)
+
+
+        // LOAD ACTIVITY
+        loadActivity(data)
+
+    }
+
+    catch(error){
+
+        console.log(error)
+
+        alert(
+            "Session expired. Login again."
+        )
+
+        localStorage.clear()
+
+        window.location.href = "/"
+    }
+}
+
+
+
+// CHART
+function loadChart(data){
+
+    const ctx =
+    document.getElementById(
+        "caseChart"
+    )
+
+    // DESTROY OLD CHART
+    if(chartInstance){
+
+        chartInstance.destroy()
+    }
+
+    chartInstance =
+    new Chart(ctx,{
+
+        type:"bar",
+
+        data:{
+
+            labels:[
+
+                "Total Cases",
+
+                "Active Cases",
+
+                "Closed Cases",
+
+                "Hearings"
+            ],
+
+            datasets:[{
+
+                label:"Analytics",
+
+                data:[
+
+                    data.total_cases,
+
+                    data.active_cases,
+
+                    data.closed_cases,
+
+                    data.total_hearings
+                ],
+
+                borderRadius:10
+            }]
+        },
+
+        options:{
+
+            responsive:true,
+
+            plugins:{
+
+                legend:{
+                    display:false
+                }
+            }
+        }
+    })
+}
+
+
+
+// ACTIVITY
+function loadActivity(data){
+
+    const feed =
+    document.getElementById(
+        "activityFeed"
+    )
+
+    feed.innerHTML = ""
+
+    // CHECK NOTIFICATIONS
+    if(
+
+        data.recent_notifications &&
+
+        data.recent_notifications.length > 0
+    ){
+
+        data.recent_notifications.forEach(
+
+            notification=>{
+
+                feed.innerHTML += `
+
+                <div class="border rounded-4 p-3 mb-3">
+
+                    <div class="d-flex justify-content-between">
+
+                        <h6 class="fw-bold">
+
+                            ${notification.type}
+
+                        </h6>
+
+                        <span class="badge bg-primary">
+
+                            New
+
+                        </span>
+
+                    </div>
+
+                    <p class="mb-0 text-muted">
+
+                        ${notification.message}
+
+                    </p>
+
+                </div>
+                `
+            }
+        )
+
+    }else{
+
+        feed.innerHTML = `
+
+        <div class="text-muted">
+
+            No recent activity
+
+        </div>
+        `
+    }
+}
+
+
+
+// UPCOMING HEARINGS
+async function loadUpcomingHearingsDashboard(){
+
+    try{
+
+        const response =
+        await fetch(
+
+            "/hearings/upcoming",
+
+            {
+
+                headers:{
+
+                    "Authorization":
+                    `Bearer ${token}`
+                }
+            }
+        )
+
+        const hearings =
+        await response.json()
+
+        const container =
+        document.getElementById(
+            "upcomingHearingsDashboard"
+        )
+
+        container.innerHTML = ""
+
+
+        if(hearings.length === 0){
+
+            container.innerHTML = `
+
+                <div class="text-muted">
+
+                    No upcoming hearings
+
+                </div>
+
+            `
+
+            return
+        }
+
+
+        hearings.forEach(hearing=>{
+
+            container.innerHTML += `
+
+                <div class="border rounded-4 p-3 mb-3">
+
+                    <h6 class="fw-bold">
+
+                        ${hearing.title || "Hearing"}
+
+                    </h6>
+
+                    <p class="mb-1">
+
+                        📍 ${hearing.location}
+
+                    </p>
+
+                    <small class="text-muted">
+
+                        ${new Date(
+                            hearing.hearing_date
+                        ).toLocaleString()}
+
+                    </small>
+
+                    <div class="mt-2">
+
+                        <span class="badge bg-warning text-dark">
+
+                            ${hearing.status}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            `
+        })
+
+    }
+
+    catch(error){
+
+        console.log(error)
+    }
+}
+
+
+
+// REFRESH
+function refreshDashboard(){
+
+    loadDashboard()
+
+    loadUpcomingHearingsDashboard()
+}
+
+
+
+// LOGOUT
+function logout(){
+
+    localStorage.clear()
+
+    window.location.href = "/"
+}
+
+
+
+// INITIAL LOAD
+loadDashboard()
+
+loadUpcomingHearingsDashboard()
+
+</script>
+
+{% endblock %}

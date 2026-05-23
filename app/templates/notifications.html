@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="fw-bold">
+                Notifications
+            </h2>
+
+            <p class="text-muted">
+                Real-time alerts and updates
+            </p>
+
+        </div>
+
+        <button
+            class="btn btn-primary"
+            onclick="refreshNotifications()"
+        >
+            Refresh
+        </button>
+
+    </div>
+
+    <div id="notificationContainer">
+
+    </div>
+
+</div>
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        const token =
+        localStorage.getItem(
+            "access_token"
+        )
+
+        console.log(
+            "TOKEN:",
+            token
+        )
+
+        if(!token){
+
+            alert(
+                "Please login first"
+            )
+
+            window.location.href = "/"
+
+            return
+        }
+
+        loadNotificationsPage(token)
+    }
+)
+
+
+
+async function loadNotificationsPage(token){
+
+    try{
+
+        const response =
+        await fetch(
+
+            "http://127.0.0.1:8000/notifications/",
+
+            {
+
+                method:"GET",
+
+                headers:{
+
+                    "Authorization":
+                    `Bearer ${token}`,
+
+                    "Content-Type":
+                    "application/json"
+                }
+            }
+        )
+
+
+        console.log(
+            "STATUS:",
+            response.status
+        )
+
+
+        if(response.status === 401){
+
+            alert(
+                "Session expired"
+            )
+
+            localStorage.clear()
+
+            window.location.href = "/"
+
+            return
+        }
+
+
+        const notifications =
+        await response.json()
+
+
+        console.log(
+            notifications
+        )
+
+
+        const container =
+        document.getElementById(
+            "notificationContainer"
+        )
+
+        container.innerHTML = ""
+
+
+        if(
+            !notifications ||
+            notifications.length === 0
+        ){
+
+            container.innerHTML = `
+
+                <div class="alert alert-info rounded-4">
+
+                    No notifications found
+
+                </div>
+
+            `
+
+            return
+        }
+
+
+        notifications.forEach(notification => {
+
+            container.innerHTML += `
+
+                <div class="card border-0 shadow-sm rounded-4 mb-3">
+
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between">
+
+                            <div>
+
+                                <h5 class="fw-bold">
+
+                                    ${notification.type || "Update"}
+
+                                </h5>
+
+                                <p class="mb-2">
+
+                                    ${notification.message || ""}
+
+                                </p>
+
+                                <small class="text-muted">
+
+                                    Notification ID:
+                                    ${notification.id}
+
+                                </small>
+
+                            </div>
+
+                            <span class="badge bg-primary">
+
+                                Active
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `
+        })
+
+    }
+
+    catch(error){
+
+        console.log(error)
+
+        alert(
+            "Error loading notifications"
+        )
+    }
+}
+
+
+
+function refreshNotifications(){
+
+    const token =
+    localStorage.getItem(
+        "access_token"
+    )
+
+    loadNotificationsPage(token)
+}
+
+</script>
+
+{% endblock %}
