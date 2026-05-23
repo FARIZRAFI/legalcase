@@ -1,12 +1,14 @@
 import os
-import uvicorn
 
 from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles
 
 from app.database import engine, Base
 
-# Import Models
+# =========================
+# IMPORT MODELS
+# =========================
+
 from app.models.user_model import User
 from app.models.case_model import Case
 from app.models.timeline_model import TimelineEvent
@@ -14,7 +16,10 @@ from app.models.hearing_model import Hearing
 from app.models.notification_model import Notification
 from app.models.document_model import Document
 
-# Import Routers
+# =========================
+# IMPORT ROUTERS
+# =========================
+
 from app.routes.auth_routes import router as auth_router
 from app.routes.case_routes import router as case_router
 from app.routes.timeline_routes import router as timeline_router
@@ -37,16 +42,22 @@ from app.routes.page_routes import (
 
 from app.services.auth_service import verify_token
 
-# Create Database Tables
+# =========================
+# CREATE DATABASE TABLES
+# =========================
+
 Base.metadata.create_all(bind=engine)
 
-# Create FastAPI App
+# =========================
+# CREATE FASTAPI APP
+# =========================
+
 app = FastAPI(
     title="Legal Case Management System"
 )
 
 # =========================
-# STATIC FILES FIX
+# STATIC FILES
 # =========================
 
 BASE_DIR = os.path.dirname(
@@ -58,13 +69,27 @@ STATIC_DIR = os.path.join(
     "static"
 )
 
-# Create static folder if missing
-os.makedirs(STATIC_DIR, exist_ok=True)
+UPLOADS_DIR = os.path.join(
+    BASE_DIR,
+    "uploads"
+)
 
+# Create folders if missing
+os.makedirs(STATIC_DIR, exist_ok=True)
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+
+# Mount Static Folder
 app.mount(
     "/static",
     StaticFiles(directory=STATIC_DIR),
     name="static"
+)
+
+# Mount Uploads Folder
+app.mount(
+    "/uploads",
+    StaticFiles(directory=UPLOADS_DIR),
+    name="uploads"
 )
 
 # =========================
@@ -128,20 +153,3 @@ def health_check():
     return {
         "status": "healthy"
     }
-
-# =========================
-# RAILWAY STARTUP FIX
-# =========================
-
-if __name__ == "__main__":
-
-    port = int(
-        os.environ.get("PORT", 8000)
-    )
-
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=port,
-        reload=False
-    )
