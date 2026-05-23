@@ -172,7 +172,7 @@ async function uploadDocument(){
         const response =
         await fetch(
 
-            `http://127.0.0.1:8000/documents/${caseId}`,
+            `${window.location.origin}/documents/${caseId}`,
 
             {
 
@@ -242,7 +242,7 @@ async function loadDocuments(){
         const response =
         await fetch(
 
-            `http://127.0.0.1:8000/documents/${caseId}`,
+            `${window.location.origin}/documents/${caseId}`,
 
             {
 
@@ -308,7 +308,7 @@ async function loadDocuments(){
                     <div class="d-flex gap-2">
 
                         <a
-                            href="http://127.0.0.1:8000/documents/download/${doc.id}"
+                            href="${window.location.origin}/documents/download/${doc.id}"
                             target="_blank"
                             class="btn btn-primary"
                         >
