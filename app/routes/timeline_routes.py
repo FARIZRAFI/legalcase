@@ -1,7 +1,8 @@
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException
+    HTTPException,
+    Query
 )
 
 from sqlalchemy.orm import Session
@@ -58,18 +59,19 @@ def add_timeline_event(
     db: Session = Depends(get_db),
 
     user_data: dict = Depends(verify_token)
-
 ):
 
-    # CHECK CASE EXISTS
     case = db.query(Case).filter(
         Case.id == event.case_id
     ).first()
 
+
     if not case:
 
         raise HTTPException(
+
             status_code=404,
+
             detail="Case not found"
         )
 
@@ -93,7 +95,7 @@ def add_timeline_event(
     return {
 
         "message":
-        "Timeline event added",
+        "Timeline event added successfully",
 
         "timeline_id":
         timeline_event.id
@@ -113,17 +115,19 @@ def get_case_timeline(
     db: Session = Depends(get_db),
 
     user_data: dict = Depends(verify_token)
-
 ):
 
     case = db.query(Case).filter(
         Case.id == case_id
     ).first()
 
+
     if not case:
 
         raise HTTPException(
+
             status_code=404,
+
             detail="Case not found"
         )
 
@@ -134,37 +138,52 @@ def get_case_timeline(
 
     ).order_by(
 
-        TimelineEvent.created_at.desc()
+        TimelineEvent.created_at.desc(),
+
+        TimelineEvent.id.desc()
 
     ).all()
 
 
-    results = []
+    timeline = []
 
 
     for event in events:
 
-        results.append({
+        timeline.append({
 
-            "id": event.id,
+            "id":
+            event.id,
 
-            "case_id": event.case_id,
+            "case_id":
+            event.case_id,
 
-            "title": event.title,
+            "title":
+            event.title,
 
-            "description": event.description,
+            "description":
+            event.description,
 
-            "created_at": event.created_at.isoformat()
+            "created_at":
+            event.created_at.isoformat()
+            if event.created_at
+            else None
         })
 
 
     return {
 
-        "case_id": case.id,
+        "case_id":
+        case.id,
 
-        "case_title": case.case_title,
+        "case_title":
+        case.case_title,
 
-        "timeline": results
+        "total_events":
+        len(timeline),
+
+        "timeline":
+        timeline
     }
 
 
@@ -181,7 +200,6 @@ def delete_timeline_event(
     db: Session = Depends(get_db),
 
     user_data: dict = Depends(verify_token)
-
 ):
 
     timeline_event = db.query(
@@ -196,7 +214,9 @@ def delete_timeline_event(
     if not timeline_event:
 
         raise HTTPException(
+
             status_code=404,
+
             detail="Timeline event not found"
         )
 
@@ -221,17 +241,18 @@ def delete_timeline_event(
 @router.get("/recent/all")
 def recent_timeline_events(
 
-    limit: int = 10,
+    limit: int = Query(10),
 
     db: Session = Depends(get_db),
 
     user_data: dict = Depends(verify_token)
-
 ):
 
     events = db.query(TimelineEvent).order_by(
 
-        TimelineEvent.created_at.desc()
+        TimelineEvent.created_at.desc(),
+
+        TimelineEvent.id.desc()
 
     ).limit(limit).all()
 
@@ -245,26 +266,96 @@ def recent_timeline_events(
             Case.id == event.case_id
         ).first()
 
+
         case_title = "Unknown Case"
 
         if case:
+
             case_title = case.case_title
 
 
         results.append({
 
-            "id": event.id,
+            "id":
+            event.id,
 
-            "case_id": event.case_id,
+            "case_id":
+            event.case_id,
 
-            "case_title": case_title,
+            "case_title":
+            case_title,
 
-            "title": event.title,
+            "title":
+            event.title,
 
-            "description": event.description,
+            "description":
+            event.description,
 
-            "created_at": event.created_at.isoformat()
+            "created_at":
+            event.created_at.isoformat()
+            if event.created_at
+            else None
         })
 
 
-    return results
+    return {
+
+        "total":
+        len(results),
+
+        "events":
+        results
+    }
+
+
+
+# =========================
+# GET SINGLE TIMELINE EVENT
+# =========================
+
+@router.get("/event/{timeline_id}")
+def get_single_timeline_event(
+
+    timeline_id: int,
+
+    db: Session = Depends(get_db),
+
+    user_data: dict = Depends(verify_token)
+):
+
+    event = db.query(TimelineEvent).filter(
+
+        TimelineEvent.id == timeline_id
+
+    ).first()
+
+
+    if not event:
+
+        raise HTTPException(
+
+            status_code=404,
+
+            detail="Timeline event not found"
+        )
+
+
+    return {
+
+        "id":
+        event.id,
+
+        "case_id":
+        event.case_id,
+
+        "title":
+        event.title,
+
+        "description":
+        event.description,
+
+        "created_at":
+        event.created_at.isoformat()
+        if event.created_at
+        else None
+    }

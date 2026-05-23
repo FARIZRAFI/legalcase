@@ -1,4 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query
+)
+
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
@@ -6,11 +12,25 @@ from typing import Optional
 
 from app.database import SessionLocal
 
-from app.models.case_model import Case
-from app.models.notification_model import Notification
-from app.models.hearing_model import Hearing
-from app.models.document_model import Document
-from app.models.timeline_model import TimelineEvent
+from app.models.case_model import (
+    Case
+)
+
+from app.models.notification_model import (
+    Notification
+)
+
+from app.models.hearing_model import (
+    Hearing
+)
+
+from app.models.document_model import (
+    Document
+)
+
+from app.models.timeline_model import (
+    TimelineEvent
+)
 
 from app.schemas.case_schema import (
     CaseCreate,
@@ -135,6 +155,7 @@ Client ID:
     db.commit()
 
 
+
     return {
 
         "message":
@@ -169,10 +190,12 @@ def get_cases(
     query = db.query(Case)
 
 
+
     # ADMIN
     if role == "admin":
 
         pass
+
 
 
     # LAWYER
@@ -183,6 +206,7 @@ def get_cases(
         )
 
 
+
     # CLIENT
     elif role == "client":
 
@@ -191,9 +215,13 @@ def get_cases(
         )
 
 
+
     cases = query.order_by(
+
         Case.id.desc()
+
     ).offset(skip).limit(limit).all()
+
 
     return cases
 
@@ -263,22 +291,24 @@ def update_case(
         )
 
 
-    if updated_case.case_title:
+
+    # UPDATE FIELDS
+    if updated_case.case_title is not None:
 
         case.case_title = updated_case.case_title
 
 
-    if updated_case.case_description:
+    if updated_case.case_description is not None:
 
         case.case_description = updated_case.case_description
 
 
-    if updated_case.case_status:
+    if updated_case.case_status is not None:
 
         case.case_status = updated_case.case_status
 
 
-    if updated_case.lawyer_id:
+    if updated_case.lawyer_id is not None:
 
         case.lawyer_id = updated_case.lawyer_id
 
@@ -320,7 +350,7 @@ Lawyer ID:
     # LAWYER NOTIFICATION
     # =========================
 
-    if updated_case.lawyer_id:
+    if updated_case.lawyer_id is not None:
 
         lawyer_notification = Notification(
 
@@ -357,6 +387,7 @@ Lawyer ID:
     db.add(notification)
 
     db.commit()
+
 
 
     return {
@@ -397,27 +428,7 @@ def delete_case(
 
 
 
-    # =========================
-    # TIMELINE EVENT
-    # =========================
-
-    create_timeline_event(
-
-        db=db,
-
-        case_id=case.id,
-
-        title="Case Deleted",
-
-        description=f"""
-
-Case deleted successfully.
-
-Case:
-{case.case_title}
-
-        """
-    )
+    case_title = case.case_title
 
 
 
@@ -427,10 +438,19 @@ Case:
     ).delete()
 
 
+
     # DELETE RELATED DOCUMENTS
     db.query(Document).filter(
         Document.case_id == case_id
     ).delete()
+
+
+
+    # DELETE RELATED NOTIFICATIONS
+    db.query(Notification).filter(
+        Notification.user_id == case.client_id
+    ).delete()
+
 
 
     # DELETE RELATED TIMELINE EVENTS
@@ -439,16 +459,18 @@ Case:
     ).delete()
 
 
+
     # DELETE CASE
     db.delete(case)
 
     db.commit()
 
 
+
     return {
 
         "message":
-        "Case deleted successfully"
+        f"Case '{case_title}' deleted successfully"
     }
 
 
@@ -476,11 +498,16 @@ def search_cases(
     query = db.query(Case)
 
 
+
     if title:
 
         query = query.filter(
-            Case.case_title.ilike(f"%{title}%")
+
+            Case.case_title.ilike(
+                f"%{title}%"
+            )
         )
+
 
 
     if status:
@@ -490,11 +517,13 @@ def search_cases(
         )
 
 
+
     if lawyer_id:
 
         query = query.filter(
             Case.lawyer_id == lawyer_id
         )
+
 
 
     if client_id:
@@ -504,7 +533,10 @@ def search_cases(
         )
 
 
-    return query.all()
+
+    return query.order_by(
+        Case.id.desc()
+    ).all()
 
 
 
@@ -526,12 +558,22 @@ def advanced_search(
 
         or_(
 
-            Case.case_title.ilike(f"%{query}%"),
+            Case.case_title.ilike(
+                f"%{query}%"
+            ),
 
-            Case.case_description.ilike(f"%{query}%"),
+            Case.case_description.ilike(
+                f"%{query}%"
+            ),
 
-            Case.case_status.ilike(f"%{query}%")
+            Case.case_status.ilike(
+                f"%{query}%"
+            )
         )
+
+    ).order_by(
+
+        Case.id.desc()
 
     ).all()
 

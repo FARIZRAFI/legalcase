@@ -12,15 +12,11 @@
         <div>
 
             <h2 class="fw-bold">
-
                 Document Center
-
             </h2>
 
             <small class="text-muted">
-
                 Upload and manage legal documents
-
             </small>
 
         </div>
@@ -43,7 +39,8 @@
                         type="number"
                         id="caseId"
                         class="form-control"
-                        placeholder="Case ID"
+                        placeholder="Enter Case ID"
+                        onchange="loadDocuments()"
                     >
 
                 </div>
@@ -63,6 +60,7 @@
                     <button
                         class="btn btn-primary w-100"
                         onclick="uploadDocument()"
+                        id="uploadBtn"
                     >
 
                         <i class="fa-solid fa-upload"></i>
@@ -90,9 +88,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
 
                 <h5 class="fw-bold">
-
                     Case Documents
-
                 </h5>
 
                 <button
@@ -125,7 +121,10 @@ localStorage.getItem(
 
 
 
-// CHECK LOGIN
+// =========================
+// LOGIN CHECK
+// =========================
+
 if(!token){
 
     window.location.href = "/"
@@ -133,7 +132,10 @@ if(!token){
 
 
 
+// =========================
 // UPLOAD DOCUMENT
+// =========================
+
 async function uploadDocument(){
 
     const caseId =
@@ -158,6 +160,19 @@ async function uploadDocument(){
     }
 
 
+
+    const uploadBtn =
+    document.getElementById(
+        "uploadBtn"
+    )
+
+    uploadBtn.disabled = true
+
+    uploadBtn.innerHTML =
+    "Uploading..."
+
+
+
     const formData =
     new FormData()
 
@@ -165,6 +180,7 @@ async function uploadDocument(){
         "file",
         file
     )
+
 
 
     try{
@@ -179,6 +195,7 @@ async function uploadDocument(){
                 method:"POST",
 
                 headers:{
+
                     "Authorization":
                     `Bearer ${token}`
                 },
@@ -188,24 +205,41 @@ async function uploadDocument(){
         )
 
 
+
         const data =
         await response.json()
+
 
 
         if(!response.ok){
 
             alert(
+
                 data.detail ||
                 "Upload failed"
             )
+
+            uploadBtn.disabled = false
+
+            uploadBtn.innerHTML =
+            "Upload Document"
 
             return
         }
 
 
+
         alert(
             "Document uploaded successfully"
         )
+
+
+
+        document.getElementById(
+            "documentFile"
+        ).value = ""
+
+
 
         loadDocuments()
 
@@ -219,11 +253,21 @@ async function uploadDocument(){
             "Upload error"
         )
     }
+
+
+
+    uploadBtn.disabled = false
+
+    uploadBtn.innerHTML =
+    "Upload Document"
 }
 
 
 
+// =========================
 // LOAD DOCUMENTS
+// =========================
+
 async function loadDocuments(){
 
     const caseId =
@@ -233,8 +277,10 @@ async function loadDocuments(){
 
 
     if(!caseId){
+
         return
     }
+
 
 
     try{
@@ -247,6 +293,7 @@ async function loadDocuments(){
             {
 
                 headers:{
+
                     "Authorization":
                     `Bearer ${token}`
                 }
@@ -254,8 +301,10 @@ async function loadDocuments(){
         )
 
 
+
         const documents =
         await response.json()
+
 
 
         const container =
@@ -263,7 +312,10 @@ async function loadDocuments(){
             "documentContainer"
         )
 
+
+
         container.innerHTML = ""
+
 
 
         if(documents.length === 0){
@@ -280,6 +332,7 @@ async function loadDocuments(){
 
             return
         }
+
 
 
         documents.forEach(doc=>{
@@ -308,7 +361,7 @@ async function loadDocuments(){
                     <div class="d-flex gap-2">
 
                         <a
-                            href=`${window.location.origin}/documents/download/${doc.id}`
+                            href="${window.location.origin}/documents/download/${doc.id}"
                             target="_blank"
                             class="btn btn-primary"
                         >
@@ -318,6 +371,17 @@ async function loadDocuments(){
                             Download
 
                         </a>
+
+                        <button
+                            class="btn btn-danger"
+                            onclick="deleteDocument(${doc.id})"
+                        >
+
+                            <i class="fa-solid fa-trash"></i>
+
+                            Delete
+
+                        </button>
 
                     </div>
 
@@ -331,6 +395,89 @@ async function loadDocuments(){
     catch(error){
 
         console.log(error)
+
+        alert(
+            "Failed to load documents"
+        )
+    }
+}
+
+
+
+// =========================
+// DELETE DOCUMENT
+// =========================
+
+async function deleteDocument(documentId){
+
+    const confirmed = confirm(
+        "Delete this document?"
+    )
+
+
+    if(!confirmed){
+
+        return
+    }
+
+
+
+    try{
+
+        const response =
+        await fetch(
+
+            `${window.location.origin}/documents/${documentId}`,
+
+            {
+
+                method:"DELETE",
+
+                headers:{
+
+                    "Authorization":
+                    `Bearer ${token}`
+                }
+            }
+        )
+
+
+
+        const data =
+        await response.json()
+
+
+
+        if(!response.ok){
+
+            alert(
+
+                data.detail ||
+                "Delete failed"
+            )
+
+            return
+        }
+
+
+
+        alert(
+            "Document deleted successfully"
+        )
+
+
+
+        loadDocuments()
+
+    }
+
+    catch(error){
+
+        console.log(error)
+
+        alert(
+            "Delete failed"
+        )
     }
 }
 

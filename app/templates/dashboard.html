@@ -49,9 +49,11 @@
     </div>
 
 
+
     <!-- ANALYTICS CARDS -->
 
     <div class="row g-4 mb-4">
+
 
         <!-- TOTAL CASES -->
 
@@ -66,9 +68,7 @@
                         <div>
 
                             <h6 class="text-muted">
-
                                 Total Cases
-
                             </h6>
 
                             <h2
@@ -97,6 +97,7 @@
         </div>
 
 
+
         <!-- ACTIVE CASES -->
 
         <div class="col-xl-3 col-md-6">
@@ -110,9 +111,7 @@
                         <div>
 
                             <h6 class="text-muted">
-
                                 Active Cases
-
                             </h6>
 
                             <h2
@@ -141,6 +140,7 @@
         </div>
 
 
+
         <!-- CLOSED CASES -->
 
         <div class="col-xl-3 col-md-6">
@@ -154,9 +154,7 @@
                         <div>
 
                             <h6 class="text-muted">
-
                                 Closed Cases
-
                             </h6>
 
                             <h2
@@ -185,6 +183,7 @@
         </div>
 
 
+
         <!-- HEARINGS -->
 
         <div class="col-xl-3 col-md-6">
@@ -198,9 +197,7 @@
                         <div>
 
                             <h6 class="text-muted">
-
                                 Hearings
-
                             </h6>
 
                             <h2
@@ -231,9 +228,11 @@
     </div>
 
 
+
     <!-- CHARTS -->
 
     <div class="row g-4">
+
 
         <!-- CHART -->
 
@@ -246,15 +245,11 @@
                     <div class="d-flex justify-content-between align-items-center mb-4">
 
                         <h5 class="fw-bold">
-
                             Case Analytics
-
                         </h5>
 
                         <span class="badge bg-primary">
-
                             Live Data
-
                         </span>
 
                     </div>
@@ -271,6 +266,7 @@
         </div>
 
 
+
         <!-- ACTIVITY -->
 
         <div class="col-lg-4">
@@ -282,9 +278,7 @@
                     <div class="d-flex justify-content-between mb-4">
 
                         <h5 class="fw-bold">
-
                             Recent Activity
-
                         </h5>
 
                         <button
@@ -325,6 +319,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 
+
 <script>
 
 const token =
@@ -333,18 +328,26 @@ localStorage.getItem(
 )
 
 
-// CHECK LOGIN
+
+// =========================
+// LOGIN CHECK
+// =========================
+
 if(!token){
 
     window.location.href = "/"
 }
 
 
+
 let chartInstance = null
 
 
 
+// =========================
 // LOAD DASHBOARD
+// =========================
+
 async function loadDashboard(){
 
     try{
@@ -361,9 +364,9 @@ async function loadDashboard(){
                     "Authorization":
                     `Bearer ${token}`
                 }
-
             }
         )
+
 
         if(!response.ok){
 
@@ -372,42 +375,61 @@ async function loadDashboard(){
             )
         }
 
+
         const data =
         await response.json()
 
+        const analytics =
+        data.analytics
 
+
+
+        // =========================
         // UPDATE CARDS
+        // =========================
 
         document.getElementById(
             "totalCases"
         ).innerText =
-        data.total_cases
+        analytics.total_cases
 
 
         document.getElementById(
             "activeCases"
         ).innerText =
-        data.active_cases
+        analytics.active_cases
 
 
         document.getElementById(
             "closedCases"
         ).innerText =
-        data.closed_cases
+        analytics.closed_cases
 
 
         document.getElementById(
             "totalHearings"
         ).innerText =
-        data.total_hearings
+        analytics.total_hearings
 
 
+
+        // =========================
         // LOAD CHART
-        loadChart(data)
+        // =========================
+
+        loadChart(
+            analytics
+        )
 
 
+
+        // =========================
         // LOAD ACTIVITY
-        loadActivity(data)
+        // =========================
+
+        loadActivity(
+            data.recent_notifications
+        )
 
     }
 
@@ -427,7 +449,10 @@ async function loadDashboard(){
 
 
 
+// =========================
 // CHART
+// =========================
+
 function loadChart(data){
 
     const ctx =
@@ -435,11 +460,13 @@ function loadChart(data){
         "caseChart"
     )
 
+
     // DESTROY OLD CHART
     if(chartInstance){
 
         chartInstance.destroy()
     }
+
 
     chartInstance =
     new Chart(ctx,{
@@ -494,8 +521,11 @@ function loadChart(data){
 
 
 
-// ACTIVITY
-function loadActivity(data){
+// =========================
+// ACTIVITY FEED
+// =========================
+
+function loadActivity(notifications){
 
     const feed =
     document.getElementById(
@@ -504,15 +534,15 @@ function loadActivity(data){
 
     feed.innerHTML = ""
 
-    // CHECK NOTIFICATIONS
+
     if(
 
-        data.recent_notifications &&
+        notifications &&
 
-        data.recent_notifications.length > 0
+        notifications.length > 0
     ){
 
-        data.recent_notifications.forEach(
+        notifications.forEach(
 
             notification=>{
 
@@ -562,7 +592,10 @@ function loadActivity(data){
 
 
 
+// =========================
 // UPCOMING HEARINGS
+// =========================
+
 async function loadUpcomingHearingsDashboard(){
 
     try{
@@ -582,8 +615,10 @@ async function loadUpcomingHearingsDashboard(){
             }
         )
 
+
         const hearings =
         await response.json()
+
 
         const container =
         document.getElementById(
@@ -660,7 +695,10 @@ async function loadUpcomingHearingsDashboard(){
 
 
 
+// =========================
 // REFRESH
+// =========================
+
 function refreshDashboard(){
 
     loadDashboard()
@@ -670,7 +708,10 @@ function refreshDashboard(){
 
 
 
+// =========================
 // LOGOUT
+// =========================
+
 function logout(){
 
     localStorage.clear()
@@ -680,7 +721,10 @@ function logout(){
 
 
 
+// =========================
 // INITIAL LOAD
+// =========================
+
 loadDashboard()
 
 loadUpcomingHearingsDashboard()

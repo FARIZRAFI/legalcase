@@ -1,45 +1,175 @@
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta
+)
 
 from sqlalchemy.orm import Session
 
-from app.models.hearing_model import Hearing
-from app.models.notification_model import Notification
+from app.models.hearing_model import (
+    Hearing
+)
+
+from app.models.notification_model import (
+    Notification
+)
 
 
-def create_hearing_reminders(db: Session):
 
-    tomorrow = datetime.utcnow() + timedelta(days=1)
+# =========================
+# CREATE HEARING REMINDERS
+# =========================
 
-    hearings = db.query(Hearing).all()
+def create_hearing_reminders(
+    db: Session
+):
 
-    created_notifications = []
+    try:
 
-    for hearing in hearings:
 
-        hearing_date = hearing.hearing_date
+        # TOMORROW DATE
+        tomorrow = (
 
-        # Check if hearing is tomorrow
-        if hearing_date.date() == tomorrow.date():
+            datetime.utcnow() +
 
-            notification = Notification(
+            timedelta(days=1)
+        ).date()
 
-                user_id=1,
 
-                title="Upcoming Hearing",
 
-                message=f"Hearing for case {hearing.case_id} is tomorrow",
+        # GET HEARINGS
+        hearings = db.query(
+            Hearing
+        ).all()
 
-                type="hearing"
 
+
+        created_notifications = []
+
+
+
+        for hearing in hearings:
+
+
+            # SAFE DATE CHECK
+            if not hearing.hearing_date:
+
+                continue
+
+
+
+            # ONLY UPCOMING
+            if hearing.status not in [
+
+                "Scheduled",
+
+                "Upcoming"
+            ]:
+
+                continue
+
+
+
+            hearing_date = (
+                hearing.hearing_date.date()
             )
 
-            db.add(notification)
 
-            created_notifications.append(notification)
 
-    db.commit()
+            # CHECK TOMORROW
+            if hearing_date == tomorrow:
 
-    return {
-        "message": "Hearing reminders created",
-        "count": len(created_notifications)
-    }
+
+
+                # PREVENT DUPLICATE REMINDERS
+                existing_notification = db.query(
+                    Notification
+                ).filter(
+
+                    Notification.message.ilike(
+                        f"%case {hearing.case_id}%"
+                    ),
+
+                    Notification.type == "hearing"
+                ).first()
+
+
+
+                if existing_notification:
+
+                    continue
+
+
+
+                # CREATE NOTIFICATION
+                notification = Notification(
+
+                    user_id=1,
+
+                    title="Upcoming Hearing",
+
+                    message=(
+                        f"Hearing for case "
+                        f"{hearing.case_id} "
+                        f"is scheduled tomorrow"
+                    ),
+
+                    type="hearing"
+                )
+
+
+
+                db.add(notification)
+
+                created_notifications.append(
+                    notification
+                )
+
+
+
+        db.commit()
+
+
+
+        print(
+            f"{len(created_notifications)} hearing reminders created"
+        )
+
+
+
+        return {
+
+            "success":
+            True,
+
+            "message":
+            "Hearing reminders created successfully",
+
+            "count":
+            len(created_notifications)
+        }
+
+
+
+    except Exception as e:
+
+
+        db.rollback()
+
+
+
+        print(
+            "Reminder creation failed:"
+        )
+
+        print(str(e))
+
+
+
+        return {
+
+            "success":
+            False,
+
+            "error":
+            str(e)
+        }

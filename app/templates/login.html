@@ -118,6 +118,11 @@
             font-size:18px;
         }
 
+        .loading-spinner{
+
+            display:none;
+        }
+
     </style>
 
 </head>
@@ -179,9 +184,19 @@
         <button
             type="submit"
             class="btn btn-primary w-100 btn-login"
+            id="loginBtn"
         >
 
-            Login
+            <span id="loginText">
+
+                Login
+
+            </span>
+
+            <span
+                class="spinner-border spinner-border-sm loading-spinner"
+                id="loadingSpinner"
+            ></span>
 
         </button>
 
@@ -192,19 +207,73 @@
 
 <script>
 
+
+
+// =========================
+// AUTO REDIRECT
+// =========================
+
+if(
+
+    localStorage.getItem(
+        "access_token"
+    )
+){
+
+    window.location.href =
+    "/dashboard-page"
+}
+
+
+
+// =========================
+// LOGIN FUNCTION
+// =========================
+
 async function loginUser(event){
 
     event.preventDefault()
+
 
     const email =
     document.getElementById(
         "email"
     ).value
 
+
     const password =
     document.getElementById(
         "password"
     ).value
+
+
+
+    const loginBtn =
+    document.getElementById(
+        "loginBtn"
+    )
+
+    const loadingSpinner =
+    document.getElementById(
+        "loadingSpinner"
+    )
+
+    const loginText =
+    document.getElementById(
+        "loginText"
+    )
+
+
+
+    // LOADING STATE
+    loginBtn.disabled = true
+
+    loadingSpinner.style.display =
+    "inline-block"
+
+    loginText.innerText =
+    "Logging in..."
+
 
 
     try{
@@ -234,8 +303,10 @@ async function loginUser(event){
         )
 
 
+
         const data =
         await response.json()
+
 
 
         if(!response.ok){
@@ -246,15 +317,19 @@ async function loginUser(event){
                 "Login Failed"
             )
 
+            resetLoginButton()
+
             return
         }
+
 
 
         // CLEAR OLD DATA
         localStorage.clear()
 
 
-        // SAVE ACCESS TOKEN
+
+        // SAVE TOKEN
         localStorage.setItem(
 
             "access_token",
@@ -263,36 +338,56 @@ async function loginUser(event){
         )
 
 
-        // OPTIONAL USER DATA
-        if(data.role){
+
+        // SAVE USER DATA
+        if(data.user){
 
             localStorage.setItem(
+
                 "user_role",
-                data.role
-            )
-        }
 
-        if(data.email){
+                data.user.role
+            )
 
             localStorage.setItem(
+
                 "user_email",
-                data.email
+
+                data.user.email
+            )
+
+            localStorage.setItem(
+
+                "user_name",
+
+                data.user.full_name
+            )
+
+            localStorage.setItem(
+
+                "user_id",
+
+                data.user.id
             )
         }
+
 
 
         console.log(
 
             "TOKEN SAVED:",
+
             localStorage.getItem(
                 "access_token"
             )
         )
 
 
+
         alert(
             "Login Successful"
         )
+
 
 
         // REDIRECT
@@ -309,6 +404,42 @@ async function loginUser(event){
             "Server Error"
         )
     }
+
+
+
+    resetLoginButton()
+}
+
+
+
+// =========================
+// RESET BUTTON
+// =========================
+
+function resetLoginButton(){
+
+    const loginBtn =
+    document.getElementById(
+        "loginBtn"
+    )
+
+    const loadingSpinner =
+    document.getElementById(
+        "loadingSpinner"
+    )
+
+    const loginText =
+    document.getElementById(
+        "loginText"
+    )
+
+    loginBtn.disabled = false
+
+    loadingSpinner.style.display =
+    "none"
+
+    loginText.innerText =
+    "Login"
 }
 
 </script>

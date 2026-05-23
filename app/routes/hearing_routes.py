@@ -15,9 +15,13 @@ from app.models.hearing_model import Hearing
 from app.models.case_model import Case
 from app.models.user_model import User
 
-from app.schemas.hearing_schema import HearingCreate
+from app.schemas.hearing_schema import (
+    HearingCreate
+)
 
-from app.services.auth_service import verify_token
+from app.services.auth_service import (
+    verify_token
+)
 
 from app.services.whatsapp_service import (
     send_whatsapp_message
@@ -74,10 +78,13 @@ async def create_hearing(
         Case.id == hearing.case_id
     ).first()
 
+
     if not existing_case:
 
         raise HTTPException(
+
             status_code=404,
+
             detail="Case not found"
         )
 
@@ -167,6 +174,7 @@ Location:
         User.id == existing_case.client_id
     ).first()
 
+
     if client and client.phone_number:
 
         message = f"""
@@ -192,11 +200,16 @@ Status:
                 message
             )
 
-            print("WHATSAPP SENT")
+            print(
+                "WHATSAPP SENT"
+            )
 
         except Exception as e:
 
-            print("WHATSAPP ERROR:", e)
+            print(
+                "WHATSAPP ERROR:",
+                e
+            )
 
 
 
@@ -232,10 +245,13 @@ async def update_hearing(
         Hearing.id == hearing_id
     ).first()
 
+
     if not hearing:
 
         raise HTTPException(
+
             status_code=404,
+
             detail="Hearing not found"
         )
 
@@ -244,10 +260,13 @@ async def update_hearing(
         Case.id == updated_data.case_id
     ).first()
 
+
     if not existing_case:
 
         raise HTTPException(
+
             status_code=404,
+
             detail="Case not found"
         )
 
@@ -341,6 +360,7 @@ Location:
         User.id == existing_case.client_id
     ).first()
 
+
     if client and client.phone_number:
 
         message = f"""
@@ -369,11 +389,16 @@ Status:
                 message
             )
 
-            print("WHATSAPP UPDATE SENT")
+            print(
+                "WHATSAPP UPDATE SENT"
+            )
 
         except Exception as e:
 
-            print("WHATSAPP UPDATE ERROR:", e)
+            print(
+                "WHATSAPP UPDATE ERROR:",
+                e
+            )
 
 
 
@@ -404,12 +429,22 @@ async def delete_hearing(
         Hearing.id == hearing_id
     ).first()
 
+
     if not hearing:
 
         raise HTTPException(
+
             status_code=404,
+
             detail="Hearing not found"
         )
+
+
+    hearing_location = hearing.location
+
+    hearing_case_id = hearing.case_id
+
+    hearing_db_id = hearing.id
 
 
 
@@ -421,14 +456,14 @@ async def delete_hearing(
 
         db=db,
 
-        case_id=hearing.case_id,
+        case_id=hearing_case_id,
 
         title="Hearing Deleted",
 
         description=f"""
 
 Location:
-{hearing.location}
+{hearing_location}
 
 Hearing removed successfully.
 
@@ -452,10 +487,10 @@ Hearing removed successfully.
         message=f"""
 
 Hearing ID:
-{hearing.id}
+{hearing_db_id}
 
 Location:
-{hearing.location}
+{hearing_location}
 
         """,
 
@@ -463,9 +498,11 @@ Location:
     )
 
 
+
     db.delete(hearing)
 
     db.commit()
+
 
 
     return {
@@ -489,9 +526,15 @@ def get_hearings(
 
 ):
 
-    hearings = db.query(Hearing).all()
+    hearings = db.query(Hearing).order_by(
+
+        Hearing.hearing_date.desc()
+
+    ).all()
+
 
     results = []
+
 
     for hearing in hearings:
 
@@ -499,25 +542,37 @@ def get_hearings(
             Case.id == hearing.case_id
         ).first()
 
+
         title = f"Case #{hearing.case_id}"
 
         if case:
+
             title = case.case_title
+
 
         results.append({
 
-            "id": hearing.id,
+            "id":
+            hearing.id,
 
-            "title": title,
+            "title":
+            title,
 
-            "case_id": hearing.case_id,
+            "case_id":
+            hearing.case_id,
 
-            "hearing_date": hearing.hearing_date.isoformat(),
+            "hearing_date":
+            hearing.hearing_date.isoformat()
+            if hearing.hearing_date
+            else None,
 
-            "location": hearing.location,
+            "location":
+            hearing.location,
 
-            "status": hearing.status
+            "status":
+            hearing.status
         })
+
 
     return results
 
@@ -540,7 +595,7 @@ def upcoming_hearings(
 
     hearings = db.query(Hearing).filter(
 
-        Hearing.hearing_date >= datetime.now()
+        Hearing.hearing_date >= datetime.utcnow()
 
     ).order_by(
 
@@ -548,7 +603,9 @@ def upcoming_hearings(
 
     ).limit(limit).all()
 
+
     results = []
+
 
     for hearing in hearings:
 
@@ -556,25 +613,37 @@ def upcoming_hearings(
             Case.id == hearing.case_id
         ).first()
 
+
         title = f"Case #{hearing.case_id}"
 
         if case:
+
             title = case.case_title
+
 
         results.append({
 
-            "id": hearing.id,
+            "id":
+            hearing.id,
 
-            "title": title,
+            "title":
+            title,
 
-            "case_id": hearing.case_id,
+            "case_id":
+            hearing.case_id,
 
-            "hearing_date": hearing.hearing_date.isoformat(),
+            "hearing_date":
+            hearing.hearing_date.isoformat()
+            if hearing.hearing_date
+            else None,
 
-            "location": hearing.location,
+            "location":
+            hearing.location,
 
-            "status": hearing.status
+            "status":
+            hearing.status
         })
+
 
     return results
 
@@ -611,7 +680,9 @@ def hearing_calendar(
 
     ).all()
 
+
     events = []
+
 
     for hearing in hearings:
 
@@ -619,27 +690,39 @@ def hearing_calendar(
             Case.id == hearing.case_id
         ).first()
 
+
         title = f"Case #{hearing.case_id}"
 
         if case:
+
             title = case.case_title
+
 
         events.append({
 
-            "id": hearing.id,
+            "id":
+            hearing.id,
 
-            "title": title,
+            "title":
+            title,
 
-            "start": hearing.hearing_date.isoformat(),
+            "start":
+            hearing.hearing_date.isoformat()
+            if hearing.hearing_date
+            else None,
 
             "extendedProps": {
 
-                "location": hearing.location,
+                "location":
+                hearing.location,
 
-                "status": hearing.status,
+                "status":
+                hearing.status,
 
-                "case_id": hearing.case_id
+                "case_id":
+                hearing.case_id
             }
         })
+
 
     return events

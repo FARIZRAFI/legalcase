@@ -368,7 +368,7 @@
                 </button>
 
 
-                <!-- NOTIFICATION DROPDOWN -->
+                <!-- NOTIFICATION PANEL -->
 
                 <div
                     id="notification-panel"
@@ -437,7 +437,7 @@
     </div>
 
 
-    <!-- DYNAMIC CONTENT -->
+    <!-- CONTENT -->
 
     {% block content %}
     {% endblock %}
@@ -468,8 +468,19 @@ function logoutUser(){
 
 
 
+// =========================
+// PRODUCTION WEBSOCKET
+// =========================
+
+const protocol =
+window.location.protocol === "https:"
+? "wss:"
+: "ws:"
+
+
 const socket = new WebSocket(
-    "ws://127.0.0.1:8000/notifications/ws"
+
+    `${protocol}//${window.location.host}/notifications/ws`
 )
 
 
@@ -483,9 +494,20 @@ socket.onmessage = function(event){
 
 
 
+socket.onerror = function(error){
+
+    console.log(
+        "WebSocket Error:",
+        error
+    )
+}
+
+
+
 function toggleNotifications(){
 
-    const panel = document.getElementById(
+    const panel =
+    document.getElementById(
         "notification-panel"
     )
 
@@ -503,9 +525,14 @@ function toggleNotifications(){
 
 
 
+// =========================
+// LOAD NOTIFICATIONS
+// =========================
+
 async function loadNotifications(){
 
-    const token = localStorage.getItem(
+    const token =
+    localStorage.getItem(
         "access_token"
     )
 
@@ -515,26 +542,32 @@ async function loadNotifications(){
 
     try{
 
-        const response = await fetch(
+        const response =
+        await fetch(
 
             `${window.location.origin}/notifications/`,
 
             {
 
                 headers:{
+
                     "Authorization":
                     `Bearer ${token}`
                 }
             }
         )
 
-        const data = await response.json()
+        const data =
+        await response.json()
+
 
         document.getElementById(
             "notification-count"
         ).innerText = data.length
 
-        const list = document.getElementById(
+
+        const list =
+        document.getElementById(
             "notification-list"
         )
 
@@ -600,14 +633,17 @@ async function loadNotifications(){
 
 
 
+// =========================
+// TOAST
+// =========================
+
 function showToast(message){
 
-    const toast = document.createElement(
-        "div"
-    )
+    const toast =
+    document.createElement("div")
 
     toast.className =
-        "toast align-items-center text-bg-primary border-0 show position-fixed bottom-0 end-0 m-4"
+    "toast align-items-center text-bg-primary border-0 show position-fixed bottom-0 end-0 m-4"
 
     toast.style.zIndex = "9999"
 

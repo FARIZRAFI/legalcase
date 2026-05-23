@@ -211,6 +211,7 @@ Cancelled
 <button
 class="btn btn-primary"
 onclick="saveHearing()"
+id="saveHearingBtn"
 >
 Save Hearing
 </button>
@@ -222,6 +223,7 @@ Save Hearing
 </div>
 
 </div>
+
 <script>
 
 if(
@@ -253,16 +255,27 @@ function getAuthHeaders(){
 
 let calendar
 
+let hearingModal
+
+
 
 document.addEventListener(
 "DOMContentLoaded",
 function(){
+
+    hearingModal =
+    new bootstrap.Modal(
+        document.getElementById(
+            "scheduleModal"
+        )
+    )
 
     initializeCalendar()
 
     loadUpcomingHearings()
 }
 )
+
 
 
 function initializeCalendar(){
@@ -512,13 +525,7 @@ function openCreateModal(){
         "status"
     ).value = "Scheduled"
 
-    new bootstrap.Modal(
-
-        document.getElementById(
-            "scheduleModal"
-        )
-
-    ).show()
+    hearingModal.show()
 }
 
 
@@ -555,13 +562,7 @@ function openEditModal(data){
     ).value =
     data.status
 
-    new bootstrap.Modal(
-
-        document.getElementById(
-            "scheduleModal"
-        )
-
-    ).show()
+    hearingModal.show()
 }
 
 
@@ -572,6 +573,7 @@ async function saveHearing(){
     document.getElementById(
         "hearing-id"
     ).value
+
 
     const payload = {
 
@@ -600,6 +602,18 @@ async function saveHearing(){
             "status"
         ).value
     }
+
+
+    const saveBtn =
+    document.getElementById(
+        "saveHearingBtn"
+    )
+
+    saveBtn.disabled = true
+
+    saveBtn.innerText =
+    "Saving..."
+
 
     try{
 
@@ -640,20 +654,15 @@ async function saveHearing(){
                 "Error saving hearing"
             )
 
+            saveBtn.disabled = false
+
+            saveBtn.innerText =
+            "Save Hearing"
+
             return
         }
 
-        bootstrap.Modal
-
-        .getInstance(
-
-            document.getElementById(
-                "scheduleModal"
-            )
-
-        )
-
-        .hide()
+        hearingModal.hide()
 
         calendar.refetchEvents()
 
@@ -667,6 +676,11 @@ async function saveHearing(){
 
         alert("Failed to save hearing")
     }
+
+    saveBtn.disabled = false
+
+    saveBtn.innerText =
+    "Save Hearing"
 }
 
 
@@ -695,6 +709,18 @@ async function deleteHearing(id){
 
         const data =
         await response.json()
+
+
+        if(!response.ok){
+
+            alert(
+
+                data.detail ||
+                "Delete failed"
+            )
+
+            return
+        }
 
         alert(data.message)
 
@@ -751,4 +777,5 @@ async function editUpcoming(id){
 }
 
 </script>
+
 {% endblock %}

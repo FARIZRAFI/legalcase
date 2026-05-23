@@ -2,14 +2,19 @@ from fastapi import (
     APIRouter,
     Depends,
     WebSocket,
-    WebSocketDisconnect
+    WebSocketDisconnect,
+    HTTPException
 )
 
 from sqlalchemy.orm import Session
 
+from typing import List
+
 from app.database import SessionLocal
 
-from app.models.notification_model import Notification
+from app.models.notification_model import (
+    Notification
+)
 
 from app.schemas.notification_schema import (
     NotificationCreate
@@ -48,31 +53,140 @@ def get_db():
 
 
 # =========================
-# WEBSOCKET CONNECTIONS
+# WEBSOCKET MANAGER
 # =========================
 
-active_connections = []
+class ConnectionManager:
+
+    def __init__(self):
+
+        self.active_connections: List[
+            WebSocket
+        ] = []
 
 
+
+    # CONNECT
+    async def connect(
+
+        self,
+
+        websocket: WebSocket
+    ):
+
+        await websocket.accept()
+
+        self.active_connections.append(
+            websocket
+        )
+
+        print(
+            "Notification WebSocket Connected"
+        )
+
+
+
+    # DISCONNECT
+    def disconnect(
+
+        self,
+
+        websocket: WebSocket
+    ):
+
+        if websocket in self.active_connections:
+
+            self.active_connections.remove(
+                websocket
+            )
+
+            print(
+                "Notification WebSocket Disconnected"
+            )
+
+
+
+    # SEND MESSAGE
+    async def send_personal_message(
+
+        self,
+
+        message: str,
+
+        websocket: WebSocket
+    ):
+
+        await websocket.send_text(
+            message
+        )
+
+
+
+    # BROADCAST
+    async def broadcast(
+
+        self,
+
+        message: str
+    ):
+
+        disconnected_clients = []
+
+
+        for connection in self.active_connections:
+
+            try:
+
+                await connection.send_text(
+                    message
+                )
+
+            except Exception:
+
+                disconnected_clients.append(
+                    connection
+                )
+
+
+        # REMOVE DEAD CONNECTIONS
+        for dead_connection in disconnected_clients:
+
+            self.disconnect(
+                dead_connection
+            )
+
+
+
+# GLOBAL MANAGER
+manager = ConnectionManager()
+
+
+
+# =========================
+# WEBSOCKET ENDPOINT
+# =========================
 
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket
 ):
 
-    await websocket.accept()
-
-    active_connections.append(websocket)
+    await manager.connect(
+        websocket
+    )
 
     try:
 
         while True:
 
+            # KEEP CONNECTION ALIVE
             await websocket.receive_text()
 
     except WebSocketDisconnect:
 
-        active_connections.remove(websocket)
+        manager.disconnect(
+            websocket
+        )
 
 
 
@@ -84,29 +198,9 @@ async def broadcast_notification(
     message: str
 ):
 
-    disconnected = []
-
-    for connection in active_connections:
-
-        try:
-
-            await connection.send_text(
-                message
-            )
-
-        except:
-
-            disconnected.append(
-                connection
-            )
-
-    for connection in disconnected:
-
-        if connection in active_connections:
-
-            active_connections.remove(
-                connection
-            )
+    await manager.broadcast(
+        message
+    )
 
 
 
@@ -134,6 +228,43 @@ def get_notifications(
 
 
 # =========================
+# GET SINGLE NOTIFICATION
+# =========================
+
+@router.get("/{notification_id}")
+def get_notification(
+
+    notification_id: int,
+
+    db: Session = Depends(get_db),
+
+    user_data: dict = Depends(verify_token)
+):
+
+    notification = db.query(
+        Notification
+    ).filter(
+
+        Notification.id == notification_id
+
+    ).first()
+
+
+    if not notification:
+
+        raise HTTPException(
+
+            status_code=404,
+
+            detail="Notification not found"
+        )
+
+
+    return notification
+
+
+
+# =========================
 # MARK AS READ
 # =========================
 
@@ -155,20 +286,73 @@ def mark_notification_read(
     ).first()
 
 
-    if notification:
+    if not notification:
 
-        notification.is_read = True
+        raise HTTPException(
 
-        db.commit()
+            status_code=404,
 
-        db.refresh(notification)
+            detail="Notification not found"
+        )
+
+
+    notification.is_read = True
+
+    db.commit()
+
+    db.refresh(notification)
 
 
     return {
 
         "message":
         "Notification marked as read"
+    }
 
+
+
+# =========================
+# DELETE NOTIFICATION
+# =========================
+
+@router.delete("/{notification_id}")
+def delete_notification(
+
+    notification_id: int,
+
+    db: Session = Depends(get_db),
+
+    user_data: dict = Depends(verify_token)
+):
+
+    notification = db.query(
+        Notification
+    ).filter(
+
+        Notification.id == notification_id
+
+    ).first()
+
+
+    if not notification:
+
+        raise HTTPException(
+
+            status_code=404,
+
+            detail="Notification not found"
+        )
+
+
+    db.delete(notification)
+
+    db.commit()
+
+
+    return {
+
+        "message":
+        "Notification deleted successfully"
     }
 
 
@@ -195,7 +379,6 @@ async def create_notification(
         message=notification.message,
 
         type=notification.type
-
     )
 
     db.add(new_notification)
@@ -205,18 +388,20 @@ async def create_notification(
     db.refresh(new_notification)
 
 
-    # LIVE BROADCAST
+
+    # LIVE WEBSOCKET PUSH
     await broadcast_notification(
 
-        f"{notification.type}: {notification.message}"
+        f"{notification.title} - {notification.message}"
     )
+
 
     return new_notification
 
 
 
 # =========================
-# HEARING REMINDERS
+# SEND HEARING REMINDERS
 # =========================
 
 @router.post("/send-hearing-reminders")
@@ -231,7 +416,7 @@ def send_hearing_reminders(
 
 
 # =========================
-# AUTO CREATE FUNCTIONS
+# SYSTEM NOTIFICATION
 # =========================
 
 async def create_system_notification(
@@ -256,7 +441,6 @@ async def create_system_notification(
         message=message,
 
         type=notification_type
-
     )
 
     db.add(notification)
@@ -266,10 +450,12 @@ async def create_system_notification(
     db.refresh(notification)
 
 
-    # LIVE PUSH
+
+    # LIVE WEBSOCKET PUSH
     await broadcast_notification(
 
         f"{title} - {message}"
     )
+
 
     return notification
