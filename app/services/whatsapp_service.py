@@ -26,17 +26,32 @@ def send_whatsapp_message(to_number: str, message: str):
         print("TWILIO WHATSAPP STARTED")
         print("=========================")
 
-        # Clean the recipient number format dynamically
-        formatted_to = to_number.strip()
-        if not formatted_to.startswith("whatsapp:"):
-            formatted_to = f"whatsapp:{formatted_to}"
+        # 1. Clean up spaces or brackets
+        clean_number = to_number.strip()
+
+        # 2. Strip out 'whatsapp:' if it was accidentally passed twice
+        if clean_number.startswith("whatsapp:"):
+            clean_number = clean_number.replace("whatsapp:", "").strip()
+
+        # 3. CRITICAL: Automatically inject the +91 country prefix if missing
+        if not clean_number.startswith("+"):
+            # If it's a standard 10-digit Indian number, snap +91 to the front
+            if len(clean_number) == 10:
+                clean_number = f"+91{clean_number}"
+            else:
+                # Fallback safeguard for numbers that might already have '91' but no '+'
+                if clean_number.startswith("91") and len(clean_number) == 12:
+                    clean_number = f"+{clean_number}"
+
+        # 4. Final Twilio string packaging
+        formatted_to = f"whatsapp:{clean_number}"
 
         print("ACCOUNT SID:", TWILIO_ACCOUNT_SID)
         print("FROM NUMBER:", TWILIO_WHATSAPP_NUMBER)
         print("TO NUMBER:", formatted_to)
         print("MESSAGE:", message)
 
-        # SEND MESSAGE
+        # SEND MESSAGE VIA CLIENT
         response = client.messages.create(
             body=message,
             from_=TWILIO_WHATSAPP_NUMBER,
@@ -48,18 +63,11 @@ def send_whatsapp_message(to_number: str, message: str):
         print("=========================")
         print("MESSAGE SID:", response.sid)
 
-        return {
-            "success": True,
-            "sid": response.sid
-        }
+        return {"success": True, "sid": response.sid}
 
     except Exception as e:
         print("=========================")
         print("TWILIO ERROR")
         print("=========================")
         print(str(e))
-
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}
