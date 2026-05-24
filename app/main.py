@@ -185,10 +185,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-@app.get("/")
-def root():
-    return {"message": "Legal API Running"}
-
 
 
 # =========================
