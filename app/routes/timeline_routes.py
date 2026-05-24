@@ -104,6 +104,134 @@ def add_timeline_event(
 
 
 # =========================
+# RECENT TIMELINE EVENTS
+# =========================
+
+@router.get("/recent/all")
+def recent_timeline_events(
+
+    limit: int = Query(10),
+
+    db: Session = Depends(get_db),
+
+    user_data: dict = Depends(verify_token)
+):
+
+    events = db.query(TimelineEvent).order_by(
+
+        TimelineEvent.created_at.desc(),
+
+        TimelineEvent.id.desc()
+
+    ).limit(limit).all()
+
+
+    results = []
+
+
+    for event in events:
+
+        case = db.query(Case).filter(
+            Case.id == event.case_id
+        ).first()
+
+
+        case_title = "Unknown Case"
+
+        if case:
+
+            case_title = case.case_title
+
+
+        results.append({
+
+            "id":
+            event.id,
+
+            "case_id":
+            event.case_id,
+
+            "case_title":
+            case_title,
+
+            "title":
+            event.title,
+
+            "description":
+            event.description,
+
+            "created_at":
+            event.created_at.isoformat()
+            if event.created_at
+            else None
+        })
+
+
+    return {
+
+        "total":
+        len(results),
+
+        "events":
+        results
+    }
+
+
+
+# =========================
+# GET SINGLE TIMELINE EVENT
+# =========================
+
+@router.get("/event/{timeline_id}")
+def get_single_timeline_event(
+
+    timeline_id: int,
+
+    db: Session = Depends(get_db),
+
+    user_data: dict = Depends(verify_token)
+):
+
+    event = db.query(TimelineEvent).filter(
+
+        TimelineEvent.id == timeline_id
+
+    ).first()
+
+
+    if not event:
+
+        raise HTTPException(
+
+            status_code=404,
+
+            detail="Timeline event not found"
+        )
+
+
+    return {
+
+        "id":
+        event.id,
+
+        "case_id":
+        event.case_id,
+
+        "title":
+        event.title,
+
+        "description":
+        event.description,
+
+        "created_at":
+        event.created_at.isoformat()
+        if event.created_at
+        else None
+    }
+
+
+
+# =========================
 # GET CASE TIMELINE
 # =========================
 
@@ -230,132 +358,4 @@ def delete_timeline_event(
 
         "message":
         "Timeline event deleted successfully"
-    }
-
-
-
-# =========================
-# RECENT TIMELINE EVENTS
-# =========================
-
-@router.get("/recent/all")
-def recent_timeline_events(
-
-    limit: int = Query(10),
-
-    db: Session = Depends(get_db),
-
-    user_data: dict = Depends(verify_token)
-):
-
-    events = db.query(TimelineEvent).order_by(
-
-        TimelineEvent.created_at.desc(),
-
-        TimelineEvent.id.desc()
-
-    ).limit(limit).all()
-
-
-    results = []
-
-
-    for event in events:
-
-        case = db.query(Case).filter(
-            Case.id == event.case_id
-        ).first()
-
-
-        case_title = "Unknown Case"
-
-        if case:
-
-            case_title = case.case_title
-
-
-        results.append({
-
-            "id":
-            event.id,
-
-            "case_id":
-            event.case_id,
-
-            "case_title":
-            case_title,
-
-            "title":
-            event.title,
-
-            "description":
-            event.description,
-
-            "created_at":
-            event.created_at.isoformat()
-            if event.created_at
-            else None
-        })
-
-
-    return {
-
-        "total":
-        len(results),
-
-        "events":
-        results
-    }
-
-
-
-# =========================
-# GET SINGLE TIMELINE EVENT
-# =========================
-
-@router.get("/event/{timeline_id}")
-def get_single_timeline_event(
-
-    timeline_id: int,
-
-    db: Session = Depends(get_db),
-
-    user_data: dict = Depends(verify_token)
-):
-
-    event = db.query(TimelineEvent).filter(
-
-        TimelineEvent.id == timeline_id
-
-    ).first()
-
-
-    if not event:
-
-        raise HTTPException(
-
-            status_code=404,
-
-            detail="Timeline event not found"
-        )
-
-
-    return {
-
-        "id":
-        event.id,
-
-        "case_id":
-        event.case_id,
-
-        "title":
-        event.title,
-
-        "description":
-        event.description,
-
-        "created_at":
-        event.created_at.isoformat()
-        if event.created_at
-        else None
     }
