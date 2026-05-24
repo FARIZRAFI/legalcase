@@ -225,6 +225,222 @@ Status:
 
 
 # =========================
+# UPCOMING HEARINGS
+# =========================
+
+@router.get("/upcoming")
+def upcoming_hearings(
+
+    limit: int = 10,
+
+    db: Session = Depends(get_db),
+
+    user_data: dict = Depends(verify_token)
+
+):
+
+    hearings = db.query(Hearing).filter(
+
+        Hearing.hearing_date >= datetime.utcnow()
+
+    ).order_by(
+
+        Hearing.hearing_date.asc()
+
+    ).limit(limit).all()
+
+
+    results = []
+
+
+    for hearing in hearings:
+
+        case = db.query(Case).filter(
+            Case.id == hearing.case_id
+        ).first()
+
+
+        title = f"Case #{hearing.case_id}"
+
+        if case:
+
+            title = case.case_title
+
+
+        results.append({
+
+            "id":
+            hearing.id,
+
+            "title":
+            title,
+
+            "case_id":
+            hearing.case_id,
+
+            "hearing_date":
+            hearing.hearing_date.isoformat()
+            if hearing.hearing_date
+            else None,
+
+            "location":
+            hearing.location,
+
+            "status":
+            hearing.status
+        })
+
+
+    return results
+
+
+
+# =========================
+# CALENDAR EVENTS
+# =========================
+
+@router.get("/calendar")
+def hearing_calendar(
+
+    month: int,
+
+    year: int,
+
+    db: Session = Depends(get_db),
+
+    user_data: dict = Depends(verify_token)
+
+):
+
+    hearings = db.query(Hearing).filter(
+
+        extract(
+            "month",
+            Hearing.hearing_date
+        ) == month,
+
+        extract(
+            "year",
+            Hearing.hearing_date
+        ) == year
+
+    ).all()
+
+
+    events = []
+
+
+    for hearing in hearings:
+
+        case = db.query(Case).filter(
+            Case.id == hearing.case_id
+        ).first()
+
+
+        title = f"Case #{hearing.case_id}"
+
+        if case:
+
+            title = case.case_title
+
+
+        events.append({
+
+            "id":
+            hearing.id,
+
+            "title":
+            title,
+
+            "start":
+            hearing.hearing_date.isoformat()
+            if hearing.hearing_date
+            else None,
+
+            "extendedProps": {
+
+                "location":
+                hearing.location,
+
+                "status":
+                hearing.status,
+
+                "case_id":
+                hearing.case_id
+            }
+        })
+
+
+    return events
+
+
+
+# =========================
+# GET ALL HEARINGS
+# =========================
+
+@router.get("/")
+def get_hearings(
+
+    db: Session = Depends(get_db),
+
+    user_data: dict = Depends(verify_token)
+
+):
+
+    hearings = db.query(Hearing).order_by(
+
+        Hearing.hearing_date.desc()
+
+    ).all()
+
+
+    results = []
+
+
+    for hearing in hearings:
+
+        case = db.query(Case).filter(
+            Case.id == hearing.case_id
+        ).first()
+
+
+        title = f"Case #{hearing.case_id}"
+
+        if case:
+
+            title = case.case_title
+
+
+        results.append({
+
+            "id":
+            hearing.id,
+
+            "title":
+            title,
+
+            "case_id":
+            hearing.case_id,
+
+            "hearing_date":
+            hearing.hearing_date.isoformat()
+            if hearing.hearing_date
+            else None,
+
+            "location":
+            hearing.location,
+
+            "status":
+            hearing.status
+        })
+
+
+    return results
+
+
+
+# =========================
 # UPDATE HEARING
 # =========================
 
@@ -510,219 +726,3 @@ Location:
         "message":
         "Hearing deleted successfully"
     }
-
-
-
-# =========================
-# GET ALL HEARINGS
-# =========================
-
-@router.get("/")
-def get_hearings(
-
-    db: Session = Depends(get_db),
-
-    user_data: dict = Depends(verify_token)
-
-):
-
-    hearings = db.query(Hearing).order_by(
-
-        Hearing.hearing_date.desc()
-
-    ).all()
-
-
-    results = []
-
-
-    for hearing in hearings:
-
-        case = db.query(Case).filter(
-            Case.id == hearing.case_id
-        ).first()
-
-
-        title = f"Case #{hearing.case_id}"
-
-        if case:
-
-            title = case.case_title
-
-
-        results.append({
-
-            "id":
-            hearing.id,
-
-            "title":
-            title,
-
-            "case_id":
-            hearing.case_id,
-
-            "hearing_date":
-            hearing.hearing_date.isoformat()
-            if hearing.hearing_date
-            else None,
-
-            "location":
-            hearing.location,
-
-            "status":
-            hearing.status
-        })
-
-
-    return results
-
-
-
-# =========================
-# UPCOMING HEARINGS
-# =========================
-
-@router.get("/upcoming")
-def upcoming_hearings(
-
-    limit: int = 10,
-
-    db: Session = Depends(get_db),
-
-    user_data: dict = Depends(verify_token)
-
-):
-
-    hearings = db.query(Hearing).filter(
-
-        Hearing.hearing_date >= datetime.utcnow()
-
-    ).order_by(
-
-        Hearing.hearing_date.asc()
-
-    ).limit(limit).all()
-
-
-    results = []
-
-
-    for hearing in hearings:
-
-        case = db.query(Case).filter(
-            Case.id == hearing.case_id
-        ).first()
-
-
-        title = f"Case #{hearing.case_id}"
-
-        if case:
-
-            title = case.case_title
-
-
-        results.append({
-
-            "id":
-            hearing.id,
-
-            "title":
-            title,
-
-            "case_id":
-            hearing.case_id,
-
-            "hearing_date":
-            hearing.hearing_date.isoformat()
-            if hearing.hearing_date
-            else None,
-
-            "location":
-            hearing.location,
-
-            "status":
-            hearing.status
-        })
-
-
-    return results
-
-
-
-# =========================
-# CALENDAR EVENTS
-# =========================
-
-@router.get("/calendar")
-def hearing_calendar(
-
-    month: int,
-
-    year: int,
-
-    db: Session = Depends(get_db),
-
-    user_data: dict = Depends(verify_token)
-
-):
-
-    hearings = db.query(Hearing).filter(
-
-        extract(
-            "month",
-            Hearing.hearing_date
-        ) == month,
-
-        extract(
-            "year",
-            Hearing.hearing_date
-        ) == year
-
-    ).all()
-
-
-    events = []
-
-
-    for hearing in hearings:
-
-        case = db.query(Case).filter(
-            Case.id == hearing.case_id
-        ).first()
-
-
-        title = f"Case #{hearing.case_id}"
-
-        if case:
-
-            title = case.case_title
-
-
-        events.append({
-
-            "id":
-            hearing.id,
-
-            "title":
-            title,
-
-            "start":
-            hearing.hearing_date.isoformat()
-            if hearing.hearing_date
-            else None,
-
-            "extendedProps": {
-
-                "location":
-                hearing.location,
-
-                "status":
-                hearing.status,
-
-                "case_id":
-                hearing.case_id
-            }
-        })
-
-
-    return events
