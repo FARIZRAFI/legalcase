@@ -4,7 +4,6 @@
 
 <div class="container-fluid py-4">
 
-
     <!-- HEADER -->
 
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
@@ -12,15 +11,11 @@
         <div>
 
             <h2 class="fw-bold mb-1">
-
                 Case Timeline
-
             </h2>
 
             <small class="text-muted">
-
                 Full activity history & audit trail
-
             </small>
 
         </div>
@@ -39,20 +34,15 @@
                 class="btn btn-primary"
                 onclick="loadTimeline()"
             >
-
                 <i class="fa-solid fa-clock-rotate-left"></i>
-
                 Load Timeline
-
             </button>
 
             <button
                 class="btn btn-outline-dark"
                 onclick="refreshTimeline()"
             >
-
                 Refresh
-
             </button>
 
         </div>
@@ -66,9 +56,7 @@
     <div id="timelineContainer">
 
         <div class="alert alert-info rounded-4">
-
             Enter a Case ID to load timeline
-
         </div>
 
     </div>
@@ -80,95 +68,58 @@
 <style>
 
 .timeline{
-
     position:relative;
-
     margin-left:20px;
-
     padding-left:30px;
-
     border-left:4px solid #2563eb;
 }
 
-
 .timeline-item{
-
     position:relative;
-
     margin-bottom:30px;
 }
 
-
 .timeline-dot{
-
     width:18px;
-
     height:18px;
-
     border-radius:50%;
-
     background:#2563eb;
-
     position:absolute;
-
     left:-40px;
-
     top:10px;
-
     border:4px solid white;
-
     box-shadow:0 0 0 3px #2563eb;
 }
 
-
 .timeline-card{
-
     background:white;
-
     border-radius:18px;
-
     padding:20px;
-
     box-shadow:0 4px 12px rgba(0,0,0,0.08);
-
     transition:0.2s;
 }
 
-
 .timeline-card:hover{
-
     transform:translateY(-2px);
 }
 
-
 .timeline-title{
-
     font-weight:bold;
-
     font-size:18px;
 }
 
-
 .timeline-time{
-
     font-size:13px;
-
     color:#64748b;
 }
 
-
 .timeline-description{
-
     margin-top:10px;
-
     color:#334155;
-
     white-space:pre-line;
 }
 
-
 .timeline-actions{
-
     margin-top:15px;
 }
 
@@ -178,10 +129,7 @@
 
 <script>
 
-const token =
-localStorage.getItem(
-    "access_token"
-)
+const token = localStorage.getItem("access_token")
 
 
 
@@ -200,20 +148,24 @@ if(!token){
 // ENTER KEY SUPPORT
 // =========================
 
-document.getElementById(
-    "caseIdInput"
-).addEventListener(
+document.addEventListener("DOMContentLoaded", function(){
 
-    "keypress",
+    document.getElementById(
+        "caseIdInput"
+    ).addEventListener(
 
-    function(event){
+        "keypress",
 
-        if(event.key === "Enter"){
+        function(event){
 
-            loadTimeline()
+            if(event.key === "Enter"){
+
+                loadTimeline()
+            }
         }
-    }
-)
+    )
+
+})
 
 
 
@@ -231,9 +183,7 @@ async function loadTimeline(){
 
     if(!caseId){
 
-        alert(
-            "Please enter case ID"
-        )
+        alert("Please enter case ID")
 
         return
     }
@@ -268,6 +218,7 @@ async function loadTimeline(){
         )
 
 
+
         if(!response.ok){
 
             throw new Error(
@@ -276,14 +227,20 @@ async function loadTimeline(){
         }
 
 
+
         const data = await response.json()
 
 
-        let html =
-        `<div class="timeline">`
+
+        let html = `<div class="timeline">`
 
 
-        if(data.length === 0){
+
+        // =========================
+        // NO EVENTS
+        // =========================
+
+        if(data.timeline.length === 0){
 
             html += `
 
@@ -296,7 +253,12 @@ async function loadTimeline(){
         }
 
 
-        data.forEach(event => {
+
+        // =========================
+        // TIMELINE EVENTS
+        // =========================
+
+        data.timeline.forEach(event => {
 
             html += `
 
@@ -341,7 +303,9 @@ async function loadTimeline(){
         })
 
 
+
         html += `</div>`
+
 
 
         document.getElementById(
