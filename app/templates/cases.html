@@ -80,6 +80,65 @@
                 <button type="submit" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-xl shadow transition cursor-pointer">Commit File Entry</button>
             </div>
         </form>
+
+    </div>
+</div>
+<div id="edit-case-modal"
+class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+
+    <div
+        class="fixed inset-0 bg-black/50"
+        onclick="closeEditCase()">
+    </div>
+
+    <div class="bg-white rounded-2xl w-full max-w-xl relative z-10">
+
+        <div class="p-6 border-b">
+            <h3 class="font-bold text-lg">Edit Case</h3>
+        </div>
+
+        <div class="p-6 space-y-4">
+
+            <input type="hidden" id="edit_case_id">
+
+            <input
+                id="edit_case_title"
+                class="w-full border rounded-xl p-3"
+                placeholder="Case Title">
+
+            <textarea
+                id="edit_case_description"
+                class="w-full border rounded-xl p-3"
+                rows="4"
+                placeholder="Description"></textarea>
+
+            <select
+                id="edit_case_status"
+                class="w-full border rounded-xl p-3">
+
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Closed">Closed</option>
+
+            </select>
+
+            <div class="flex justify-end gap-3">
+
+                <button
+                    onclick="closeEditCase()"
+                    class="px-4 py-2 border rounded-xl">
+                    Cancel
+                </button>
+
+                <button
+                    onclick="saveCaseChanges()"
+                    class="px-4 py-2 bg-slate-900 text-white rounded-xl">
+                    Save
+                </button>
+
+            </div>
+
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -126,9 +185,32 @@
                         <td class="py-4 px-6 text-slate-600 font-mono text-xs">${c.case_number}</td>
                         <td class="py-4 px-6 text-slate-500 font-medium">User Reference #${c.client_id}</td>
                         <td class="py-4 px-6">${statusBadge}</td>
-                        <td class="py-4 px-6 text-right">
-                            <button onclick="terminateCaseFile(${c.id})" class="text-slate-400 hover:text-rose-600 px-2 py-1 transition cursor-pointer" title="Purge Case File Record"><i class="fa-regular fa-trash-can"></i></button>
-                        </td>
+                      <td class="py-4 px-6 text-right">
+    <div class="flex justify-end items-center gap-3">
+
+        <button
+            onclick="viewCase(${c.id})"
+            class="text-slate-400 hover:text-blue-600 transition"
+            title="View Case">
+            <i class="fa-regular fa-eye"></i>
+        </button>
+
+        <button
+            onclick="openEditCase(${c.id})"
+            class="text-slate-400 hover:text-amber-600 transition"
+            title="Edit Case">
+            <i class="fa-regular fa-pen-to-square"></i>
+        </button>
+
+        <button
+            onclick="terminateCaseFile(${c.id})"
+            class="text-slate-400 hover:text-rose-600 transition"
+            title="Delete Case">
+            <i class="fa-regular fa-trash-can"></i>
+        </button>
+
+    </div>
+</td>
                     </tr>
                 `;
             });
@@ -178,5 +260,73 @@
     }
 
     window.addEventListener('DOMContentLoaded', fetchAndRenderCases);
+    async function openEditCase(caseId) {
+
+    const response =
+        await fetch(`/api/cases/${caseId}`);
+
+    const data =
+        await response.json();
+
+    document.getElementById("edit_case_id").value =
+        data.id;
+
+    document.getElementById("edit_case_title").value =
+        data.case_title;
+
+    document.getElementById("edit_case_description").value =
+        data.case_description || "";
+
+    document.getElementById("edit_case_status").value =
+        data.case_status;
+
+    document
+        .getElementById("edit-case-modal")
+        .classList.remove("hidden");
+}
+
+function closeEditCase() {
+
+    document
+        .getElementById("edit-case-modal")
+        .classList.add("hidden");
+}
+
+async function saveCaseChanges() {
+
+    const caseId =
+        document.getElementById("edit_case_id").value;
+
+    const payload = {
+        case_title:
+            document.getElementById("edit_case_title").value,
+
+        case_description:
+            document.getElementById("edit_case_description").value,
+
+        case_status:
+            document.getElementById("edit_case_status").value
+    };
+
+    const response =
+        await fetch(`/api/cases/${caseId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+    if(response.ok) {
+        closeEditCase();
+        fetchAndRenderCases();
+    } else {
+        alert("Failed to update case");
+    }
+}
+async function viewCase(caseId) {
+    window.location.href =
+        `/case-details/${caseId}`;
+}
 </script>
 {% endblock %}
