@@ -7,7 +7,6 @@ from app.models.user_model import User
 from app.schemas.hearing_schema import HearingCreate
 from app.services.auth_service import verify_token
 from app.services.whatsapp_service import send_whatsapp_message
-from app.services.notification_service import create_notification
 from app.services.timeline_service import create_timeline_event
 
 router = APIRouter(prefix="/hearings", tags=["Hearings"])
