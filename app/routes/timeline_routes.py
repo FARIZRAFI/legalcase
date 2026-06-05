@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
-from app.database import get_db
+from typing import Optional
 
+# Core system imports
+from app.database import get_db
 from app.models.timeline_model import TimelineEvent
 from app.models.case_model import Case
 from app.schemas.timeline_schema import TimelineCreate
-from app.services.auth_service import verify_token
+from app.routes.auth_routes import get_current_user_payload  # RESOLVES 401 UNAUTHORIZED
 
 router = APIRouter(
     prefix="/timeline",
@@ -15,11 +17,12 @@ router = APIRouter(
 # =========================
 # ADD TIMELINE EVENT
 # =========================
+@router.post("", status_code=status.HTTP_201_CREATED)
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def add_timeline_event(
     event: TimelineCreate,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_token)
+    user_data: dict = Depends(get_current_user_payload)
 ):
     case = db.query(Case).filter(Case.id == event.case_id).first()
     if not case:
@@ -39,14 +42,31 @@ def add_timeline_event(
         "timeline_id": timeline_event.id
     }
 
+
+# =======================================================
+# GET CASE TIMELINE DIRECTLY (RESOLVES 405 METHOD NOT ALLOWED)
+# =======================================================
+@router.get("/{case_id}")
+def get_case_timeline_direct(
+    case_id: int,
+    db: Session = Depends(get_db),
+    user_data: dict = Depends(get_current_user_payload)
+):
+    """
+    Catch-all GET route for /api/timeline/{id}. 
+    Redirects frontend direct calls directly to the case timeline engine.
+    """
+    return get_case_timeline(case_id=case_id, db=db, user_data=user_data)
+
+
 # =========================
-# RECENT TIMELINE EVENTS (JOIN OPTIMIZED)
+# RECENT TIMELINE EVENTS
 # =========================
 @router.get("/recent/all")
 def recent_timeline_events(
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_token)
+    user_data: dict = Depends(get_current_user_payload)
 ):
     events = (
         db.query(TimelineEvent)
@@ -73,6 +93,7 @@ def recent_timeline_events(
         "events": formatted_events
     }
 
+
 # =========================
 # GET SINGLE TIMELINE EVENT
 # =========================
@@ -80,7 +101,7 @@ def recent_timeline_events(
 def get_single_timeline_event(
     timeline_id: int,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_token)
+    user_data: dict = Depends(get_current_user_payload)
 ):
     event = db.query(TimelineEvent).filter(TimelineEvent.id == timeline_id).first()
     if not event:
@@ -94,14 +115,15 @@ def get_single_timeline_event(
         "created_at": event.created_at.isoformat() if event.created_at else None
     }
 
+
 # =========================
-# GET CASE TIMELINE (EXPLICIT SEGREGATED PATH)
+# GET CASE TIMELINE
 # =========================
 @router.get("/case/{case_id}")
 def get_case_timeline(
     case_id: int,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_token)
+    user_data: dict = Depends(get_current_user_payload)
 ):
     case = db.query(Case).filter(Case.id == case_id).first()
     if not case:
@@ -132,6 +154,7 @@ def get_case_timeline(
         "timeline": timeline
     }
 
+
 # =========================
 # DELETE TIMELINE EVENT
 # =========================
@@ -139,7 +162,7 @@ def get_case_timeline(
 def delete_timeline_event(
     timeline_id: int,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_token)
+    user_data: dict = Depends(get_current_user_payload)
 ):
     timeline_event = db.query(TimelineEvent).filter(TimelineEvent.id == timeline_id).first()
     if not timeline_event:
