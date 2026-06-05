@@ -1,31 +1,21 @@
-from app.models.notification_model import Notification
-from app.core.websocket import broadcast_notification  # Clean, unidirectional flow
+from fastapi import WebSocket
+from typing import Dict
 
-async def create_system_notification(db, user_id: int, title: str, message: str, notification_type: str):
-    try:
-        notification = Notification(user_id=user_id, title=title, message=message, type=notification_type)
-        db.add(notification)
-        db.commit()
-        db.refresh(notification)
+class ConnectionManager:
+    def __init__(self):
+        # Maps user_id to active WebSocket connection
+        self.active_connections: Dict[int, WebSocket] = {}
 
-        # Triggers broadcast directly without circular dependencies
-        try:
-            await broadcast_notification(title, message, notification_type)
-        except Exception as ws_err:
-            print(f"WebSocket broadcast failed: {str(ws_err)}")
+    async def connect(self, websocket: WebSocket, user_id: int):
+        await websocket.accept()
+        self.active_connections[user_id] = websocket
 
-        return notification
-    except Exception as e:
-        db.rollback()
-        return None
+    def disconnect(self, user_id: int):
+        if user_id in self.active_connections:
+            del self.active_connections[user_id]
 
-def create_system_notification_sync(db, user_id: int, title: str, message: str, notification_type: str):
-    try:
-        notification = Notification(user_id=user_id, title=title, message=message, type=notification_type)
-        db.add(notification)
-        db.commit()
-        db.refresh(notification)
-        return notification
-    except Exception as e:
-        db.rollback()
-        return None
+    async def send_personal_message(self, message: dict, user_id: int):
+        if user_id in self.active_connections:
+            await self.active_connections[user_id].send_json(message)
+
+manager = ConnectionManager()
