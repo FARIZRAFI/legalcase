@@ -61,11 +61,13 @@ def create_hearing(
 
     # Construct and save the hearing milestone
     new_hearing = Hearing(
-        case_id=hearing.case_id, 
-        hearing_date=hearing.hearing_date, 
-        location=hearing.location, 
-        status=hearing.status
-    )
+    case_id=hearing.case_id,
+    hearing_date=hearing.hearing_date,
+    location=hearing.location,
+    status=hearing.status,
+    judge_name=hearing.judge_name,
+    remarks=hearing.remarks
+)
     db.add(new_hearing)
     db.commit()
     db.refresh(new_hearing)

@@ -7,7 +7,10 @@ class HearingBase(BaseModel):
     hearing_date: datetime = Field(..., description="The date and time of the scheduled hearing")
     location: str = Field(..., min_length=1, max_length=255, description="The courtroom or location of the hearing")
     status: str = Field(default="Scheduled", description="The current status of the hearing (e.g., Scheduled, Adjourned, Completed)")
+    
+    judge_name: Optional[str] = None
 
+    remarks: Optional[str] = None
 class HearingCreate(HearingBase):
     pass
 

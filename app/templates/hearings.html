@@ -28,11 +28,22 @@
         </div>
     </div>
 
-    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-        <div class="p-6 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
-            <h2 class="font-bold text-slate-900 text-base">Upcoming Docket Obligations</h2>
-        </div>
+    <div class="p-6 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
 
+    <h2 class="font-bold text-slate-900 text-base">
+        Upcoming Docket Obligations
+    </h2>
+
+    <button
+        onclick="openHearingModal()"
+        class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm">
+
+        <i class="fa-solid fa-plus mr-2"></i>
+        Schedule Hearing
+
+    </button>
+
+</div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
@@ -41,6 +52,7 @@
                         <th class="py-4 px-6">Hearing Date & Time</th>
                         <th class="py-4 px-6">Courtroom Location</th>
                         <th class="py-4 px-6">Status</th>
+                        <th class="py-4 px-6">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="hearings-table-body" class="divide-y divide-slate-100 text-sm text-slate-700">
@@ -49,6 +61,45 @@
             </table>
         </div>
     </div>
+</div>
+<div id="hearing-modal"
+class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+
+    <div class="fixed inset-0 bg-black/50"></div>
+
+    <div class="bg-white rounded-2xl p-6 w-full max-w-xl relative z-10">
+
+        <h3 class="font-bold text-lg mb-4">
+            Schedule Hearing
+        </h3>
+
+        <input
+            type="number"
+            id="case_id"
+            placeholder="Case ID"
+            class="w-full border rounded-xl p-3 mb-3">
+
+        <input
+            type="datetime-local"
+            id="hearing_date"
+            class="w-full border rounded-xl p-3 mb-3">
+
+        <input
+            type="text"
+            id="location"
+            placeholder="Court Location"
+            class="w-full border rounded-xl p-3 mb-3">
+
+        <button
+            onclick="saveHearing()"
+            class="bg-slate-900 text-white px-4 py-2 rounded-xl">
+
+            Save Hearing
+
+        </button>
+
+    </div>
+
 </div>
 {% endblock %}
 
@@ -80,7 +131,43 @@
                             <td class="py-4 px-6 font-bold text-slate-900">${h.title}</td>
                             <td class="py-4 px-6 text-slate-600 font-mono text-xs">${formattedDate}</td>
                             <td class="py-4 px-6 text-slate-500 font-medium"><i class="fa-solid fa-location-dot text-slate-400 mr-1.5"></i>${h.location}</td>
-                            <td class="py-4 px-6"><span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border uppercase ${color}">${h.status}</span></td>
+                            <td class="py-4 px-6">
+    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border uppercase ${color}">
+        ${h.status}
+    </span>
+</td>
+
+<td class="py-4 px-6">
+
+    <div class="flex gap-3">
+
+        <button
+            onclick="viewHearing(${h.id})"
+            class="text-blue-600">
+
+            <i class="fa-regular fa-eye"></i>
+
+        </button>
+
+        <button
+            onclick="rescheduleHearing(${h.id})"
+            class="text-amber-600">
+
+            <i class="fa-regular fa-calendar"></i>
+
+        </button>
+
+        <button
+            onclick="deleteHearing(${h.id})"
+            class="text-red-600">
+
+            <i class="fa-regular fa-trash-can"></i>
+
+        </button>
+
+    </div>
+
+</td>
                         </tr>`;
                 }).join('');
         } catch (err) {
@@ -114,5 +201,49 @@
     }
 
     window.addEventListener('DOMContentLoaded', fetchAndRenderHearings);
+    async function saveHearing() {
+
+    const payload = {
+
+        case_id:
+            parseInt(
+                document.getElementById("case_id").value
+            ),
+
+        hearing_date:
+            document.getElementById("hearing_date").value,
+
+        location:
+            document.getElementById("location").value,
+
+        status: "Scheduled"
+    };
+
+    const response =
+        await fetch("/api/hearings/", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(payload)
+        });
+
+    if(response.ok) {
+
+        alert("Hearing Scheduled");
+
+        location.reload();
+
+    } else {
+
+        const err =
+            await response.text();
+
+        alert(err);
+    }
+}
 </script>
 {% endblock %}
