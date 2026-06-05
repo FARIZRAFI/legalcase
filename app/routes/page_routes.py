@@ -16,7 +16,7 @@ router = APIRouter(
 
 templates = Jinja2Templates(directory="app/templates")
 
-# Cookie authentication parser for server-side HTML rendering
+# Cleaned up cookie authentication parser for server-side HTML rendering
 async def verify_ui_authentication(request: Request):
     token = request.cookies.get("access_token")
     if not token:
@@ -29,48 +29,78 @@ async def verify_ui_authentication(request: Request):
     except Exception:
         return None
 
+# =========================
+# LOGIN / ROOT PAGE
+# =========================
 @router.get("/", response_class=HTMLResponse)
 async def login_page(request: Request, user_data: dict = Depends(verify_ui_authentication)):
     if user_data:
         return RedirectResponse(url="/dashboard-page", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse("login.html", {"request": request})
 
+# =========================
+# DASHBOARD PAGE
+# =========================
 @router.get("/dashboard-page", response_class=HTMLResponse)
+@router.get("/dashboard-view", response_class=HTMLResponse)  # Added safety alias
 async def dashboard_page(request: Request, user_data: dict = Depends(verify_ui_authentication)):
     if not user_data:
         return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": user_data})
 
+# =========================
+# CASES PAGE
+# =========================
 @router.get("/cases-page", response_class=HTMLResponse)
+@router.get("/cases-view", response_class=HTMLResponse)  # FIXES 404 FOR /cases-view
 async def cases_page(request: Request, user_data: dict = Depends(verify_ui_authentication)):
     if not user_data:
         return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse("cases.html", {"request": request, "user": user_data})
 
+# =========================
+# HEARINGS PAGE
+# =========================
 @router.get("/hearings-page", response_class=HTMLResponse)
+@router.get("/hearings-view", response_class=HTMLResponse)  # FIXES 404 FOR /hearings-view
 async def hearings_page(request: Request, user_data: dict = Depends(verify_ui_authentication)):
     if not user_data:
         return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse("hearings.html", {"request": request, "user": user_data})
 
+# =========================
+# NOTIFICATIONS PAGE
+# =========================
 @router.get("/notifications-page", response_class=HTMLResponse)
+@router.get("/notifications-view", response_class=HTMLResponse)  # Added safety alias
 async def notifications_page(request: Request, user_data: dict = Depends(verify_ui_authentication)):
     if not user_data:
         return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse("notifications.html", {"request": request, "user": user_data})
 
+# =========================
+# TIMELINE PAGE
+# =========================
 @router.get("/timeline-page", response_class=HTMLResponse)
+@router.get("/timeline-view", response_class=HTMLResponse)  # FIXES 404 FOR /timeline-view
 async def timeline_page(request: Request, user_data: dict = Depends(verify_ui_authentication)):
     if not user_data:
         return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse("timeline.html", {"request": request, "user": user_data})
 
+# =========================
+# DOCUMENTS PAGE
+# =========================
 @router.get("/documents-page", response_class=HTMLResponse)
+@router.get("/documents-view", response_class=HTMLResponse)  # FIXES 404 FOR /documents-view
 async def documents_page(request: Request, user_data: dict = Depends(verify_ui_authentication)):
     if not user_data:
         return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse("documents.html", {"request": request, "user": user_data})
 
+# =========================
+# API STATS & HEALTH
+# =========================
 @router.get("/dashboard-stats")
 def dashboard_stats(db: Session = Depends(get_db), user_data: dict = Depends(verify_ui_authentication)):
     if not user_data:

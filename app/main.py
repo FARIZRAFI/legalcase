@@ -1,6 +1,6 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -77,15 +77,26 @@ app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 # =========================================================================
 # REGISTER CONTEXT SEGMENT ROUTERS
 # =========================================================================
-app.include_router(auth_router)
-app.include_router(case_router)
-app.include_router(timeline_router)
-app.include_router(hearing_router)
-app.include_router(notification_router)
-app.include_router(document_router)
-app.include_router(dashboard_router)
-app.include_router(websocket_router)
+
+# 1. Root Level Routers (No "/api" prefix)
+# This perfectly handles root URLs like "/", "/dashboard-page", and "/auth/login"
 app.include_router(page_router)
+app.include_router(auth_router)
+
+# 2. Unified API Router Sub-Group (Appends "/api" prefix automatically)
+# This solves the routing mismatches for data calls and web sockets
+api_router = APIRouter(prefix="/api")
+
+api_router.include_router(case_router)
+api_router.include_router(timeline_router)
+api_router.include_router(hearing_router)
+api_router.include_router(notification_router)
+api_router.include_router(document_router)
+api_router.include_router(dashboard_router)
+api_router.include_router(websocket_router) # Combines /api + /notifications + /ws -> /api/notifications/ws
+
+# Mount the consolidated API routes into the core application engine
+app.include_router(api_router)
 
 # =========================================================================
 # BASE SYSTEM API ENDPOINTS
