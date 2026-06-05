@@ -50,7 +50,7 @@ def register_user(
             detail="Email already registered"
         )
 
-    hashed_password = hash_password(
+    password = hash_password(
         user.password
     )
 
@@ -99,7 +99,7 @@ def login(
 
     if not verify_password(
         form_data.password,
-        db_user.hashed_password     # FIXED
+        db_user.password     # FIXED
     ):
         raise HTTPException(
             status_code=401,
