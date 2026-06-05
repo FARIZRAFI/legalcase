@@ -1,486 +1,74 @@
 {% extends "base.html" %}
 
+{% block title %}Document Vault | LexSuite Workspace{% endblock %}
+{% block page_heading %}Vaulted Case Documents Asset Manager{% endblock %}
+
 {% block content %}
-
-<div class="container-fluid py-4">
-
-
-    <!-- HEADER -->
-
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+    <div class="p-6 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-
-            <h2 class="fw-bold">
-                Document Center
-            </h2>
-
-            <small class="text-muted">
-                Upload and manage legal documents
-            </small>
-
+            <h2 class="font-bold text-slate-900 text-base">Archived Case Evidence & Documentation</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Secure vault workspace preserving system file integrity loops.</p>
         </div>
-
+        <div id="vault-status" class="text-xs font-bold text-slate-400">Loading assets...</div>
     </div>
 
-
-
-    <!-- UPLOAD CARD -->
-
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-
-        <div class="card-body">
-
-            <div class="row g-3">
-
-                <div class="col-md-3">
-
-                    <input
-                        type="number"
-                        id="caseId"
-                        class="form-control"
-                        placeholder="Enter Case ID"
-                        onchange="loadDocuments()"
-                    >
-
-                </div>
-
-                <div class="col-md-6">
-
-                    <input
-                        type="file"
-                        id="documentFile"
-                        class="form-control"
-                    >
-
-                </div>
-
-                <div class="col-md-3">
-
-                    <button
-                        class="btn btn-primary w-100"
-                        onclick="uploadDocument()"
-                        id="uploadBtn"
-                    >
-
-                        <i class="fa-solid fa-upload"></i>
-
-                        Upload Document
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
+    <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="documents-grid-wrapper">
+        <div class="col-span-full text-center py-12 text-slate-400 text-sm">Querying secure transaction archive files...</div>
     </div>
-
-
-
-    <!-- DOCUMENT LIST -->
-
-    <div class="card border-0 shadow-sm rounded-4">
-
-        <div class="card-body">
-
-            <div class="d-flex justify-content-between align-items-center mb-4">
-
-                <h5 class="fw-bold">
-                    Case Documents
-                </h5>
-
-                <button
-                    class="btn btn-outline-primary"
-                    onclick="loadDocuments()"
-                >
-
-                    Refresh
-
-                </button>
-
-            </div>
-
-            <div id="documentContainer"></div>
-
-        </div>
-
-    </div>
-
 </div>
+{% endblock %}
 
-
-
+{% block scripts %}
 <script>
+    async function fetchAndRenderDocuments() {
+        const gridWrapper = document.getElementById('documents-grid-wrapper');
+        const statusNode = document.getElementById('vault-status');
+        
+        try {
+            // FIX: Point to an actual repository listing endpoint
+            const response = await fetch('/api/documents/list'); 
+            if (!response.ok) throw new Error("Could not unlock file repository logs.");
+            
+            const documents = await response.json();
+            gridWrapper.innerHTML = '';
 
-const token =
-localStorage.getItem(
-    "access_token"
-)
-
-
-
-// =========================
-// LOGIN CHECK
-// =========================
-
-if(!token){
-
-    window.location.href = "/"
-}
-
-
-
-// =========================
-// UPLOAD DOCUMENT
-// =========================
-
-async function uploadDocument(){
-
-    const caseId =
-    document.getElementById(
-        "caseId"
-    ).value
-
-
-    const file =
-    document.getElementById(
-        "documentFile"
-    ).files[0]
-
-
-    if(!caseId || !file){
-
-        alert(
-            "Please select file and case ID"
-        )
-
-        return
-    }
-
-
-
-    const uploadBtn =
-    document.getElementById(
-        "uploadBtn"
-    )
-
-    uploadBtn.disabled = true
-
-    uploadBtn.innerHTML =
-    "Uploading..."
-
-
-
-    const formData =
-    new FormData()
-
-    formData.append(
-        "file",
-        file
-    )
-
-
-
-    try{
-
-        const response =
-        await fetch(
-
-            `${window.location.origin}/documents/${caseId}`,
-
-            {
-
-                method:"POST",
-
-                headers:{
-
-                    "Authorization":
-                    `Bearer ${token}`
-                },
-
-                body:formData
+            if (!documents || documents.length === 0) {
+                gridWrapper.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 text-sm">No files uploaded to this storage matrix node yet.</div>`;
+                statusNode.innerText = "0 Assets Found";
+                return;
             }
-        )
 
+            statusNode.innerText = `${documents.length} Secure Assets Online`;
 
-
-        const data =
-        await response.json()
-
-
-
-        if(!response.ok){
-
-            alert(
-
-                data.detail ||
-                "Upload failed"
-            )
-
-            uploadBtn.disabled = false
-
-            uploadBtn.innerHTML =
-            "Upload Document"
-
-            return
-        }
-
-
-
-        alert(
-            "Document uploaded successfully"
-        )
-
-
-
-        document.getElementById(
-            "documentFile"
-        ).value = ""
-
-
-
-        loadDocuments()
-
-    }
-
-    catch(error){
-
-        console.log(error)
-
-        alert(
-            "Upload error"
-        )
-    }
-
-
-
-    uploadBtn.disabled = false
-
-    uploadBtn.innerHTML =
-    "Upload Document"
-}
-
-
-
-// =========================
-// LOAD DOCUMENTS
-// =========================
-
-async function loadDocuments(){
-
-    const caseId =
-    document.getElementById(
-        "caseId"
-    ).value
-
-
-    if(!caseId){
-
-        return
-    }
-
-
-
-    try{
-
-        const response =
-        await fetch(
-
-            `${window.location.origin}/documents/${caseId}`,
-
-            {
-
-                headers:{
-
-                    "Authorization":
-                    `Bearer ${token}`
-                }
-            }
-        )
-
-
-
-        const documents =
-        await response.json()
-
-
-
-        const container =
-        document.getElementById(
-            "documentContainer"
-        )
-
-
-
-        container.innerHTML = ""
-
-
-
-        if(documents.length === 0){
-
-            container.innerHTML = `
-
-                <div class="alert alert-info rounded-4">
-
-                    No documents uploaded
-
-                </div>
-
-            `
-
-            return
-        }
-
-
-
-        documents.forEach(doc=>{
-
-            container.innerHTML += `
-
-                <div class="border rounded-4 p-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
-
+            // FIX: Render real objects returned from your backend repository API
+            gridWrapper.innerHTML = documents.map(doc => `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm hover:border-amber-500/40 transition flex flex-col justify-between">
                     <div>
-
-                        <h6 class="fw-bold mb-1">
-
-                            ${doc.filename}
-
-                        </h6>
-
-                        <small class="text-muted">
-
-                            Document ID:
-                            ${doc.id}
-
-                        </small>
-
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-lg text-amber-500 shadow-sm">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </div>
+                            <span class="text-[10px] font-bold bg-slate-200/60 text-slate-600 px-2 py-0.5 rounded uppercase tracking-wider">Vault Node</span>
+                        </div>
+                        <h4 class="text-sm font-bold text-slate-900 truncate">${doc.filename}</h4>
+                        <p class="text-xs text-slate-500 mt-1">${doc.description || 'No description provided.'}</p>
                     </div>
-
-                    <div class="d-flex gap-2">
-
-                        <a
-                            href="${window.location.origin}/documents/download/${doc.id}"
-                            target="_blank"
-                            class="btn btn-primary"
-                        >
-
-                            <i class="fa-solid fa-download"></i>
-
-                            Download
-
+                    <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-slate-400">
+                        <span>Size: ${doc.size_human}</span>
+                        <a href="/api/documents/download/${doc.id}" class="text-slate-700 hover:text-amber-500 font-bold transition flex items-center space-x-1 cursor-pointer">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                            <span>Fetch Data Stream</span>
                         </a>
-
-                        <button
-                            class="btn btn-danger"
-                            onclick="deleteDocument(${doc.id})"
-                        >
-
-                            <i class="fa-solid fa-trash"></i>
-
-                            Delete
-
-                        </button>
-
                     </div>
-
                 </div>
-
-            `
-        })
-
-    }
-
-    catch(error){
-
-        console.log(error)
-
-        alert(
-            "Failed to load documents"
-        )
-    }
-}
-
-
-
-// =========================
-// DELETE DOCUMENT
-// =========================
-
-async function deleteDocument(documentId){
-
-    const confirmed = confirm(
-        "Delete this document?"
-    )
-
-
-    if(!confirmed){
-
-        return
-    }
-
-
-
-    try{
-
-        const response =
-        await fetch(
-
-            `${window.location.origin}/documents/${documentId}`,
-
-            {
-
-                method:"DELETE",
-
-                headers:{
-
-                    "Authorization":
-                    `Bearer ${token}`
-                }
-            }
-        )
-
-
-
-        const data =
-        await response.json()
-
-
-
-        if(!response.ok){
-
-            alert(
-
-                data.detail ||
-                "Delete failed"
-            )
-
-            return
+            `).join('');
+            
+        } catch (err) {
+            gridWrapper.innerHTML = `<div class="col-span-full text-center py-12 text-rose-600 font-medium text-sm">${err.message}</div>`;
         }
-
-
-
-        alert(
-            "Document deleted successfully"
-        )
-
-
-
-        loadDocuments()
-
     }
 
-    catch(error){
-
-        console.log(error)
-
-        alert(
-            "Delete failed"
-        )
-    }
-}
-
+    window.addEventListener('DOMContentLoaded', fetchAndRenderDocuments);
 </script>
-
 {% endblock %}

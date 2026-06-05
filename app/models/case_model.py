@@ -1,5 +1,4 @@
 from sqlalchemy import (
-
     Column,
     Integer,
     String,
@@ -8,174 +7,116 @@ from sqlalchemy import (
     ForeignKey
 )
 
-from sqlalchemy.sql import (
-    func
-)
-
-from sqlalchemy.orm import (
-    relationship
-)
+from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 
 from app.database import Base
-
 
 
 class Case(Base):
 
     __tablename__ = "cases"
 
-
-
-    # =========================
-    # PRIMARY KEY
-    # =========================
-
     id = Column(
-
         Integer,
-
         primary_key=True,
-
         index=True
     )
 
-
-
-    # =========================
-    # CASE DETAILS
-    # =========================
+    # Unique case reference
+    case_number = Column(
+        String,
+        unique=True,
+        nullable=False,
+        index=True
+    )
 
     case_title = Column(
-
         String,
-
         nullable=False
     )
-
-
 
     case_description = Column(
-
         Text,
-
         nullable=False
     )
 
-
+    case_type = Column(
+        String,
+        nullable=False,
+        default="General"
+    )
 
     case_status = Column(
-
         String,
-
         default="Pending",
-
         nullable=False
     )
 
+    priority = Column(
+        String,
+        default="Normal",
+        nullable=False
+    )
 
-
-    # =========================
-    # CLIENT & LAWYER
-    # =========================
+    court_name = Column(
+        String,
+        nullable=True
+    )
 
     client_id = Column(
-
         Integer,
-
         ForeignKey(
             "users.id",
             ondelete="SET NULL"
         ),
-
         nullable=True
     )
-
-
 
     lawyer_id = Column(
-
         Integer,
-
         ForeignKey(
             "users.id",
             ondelete="SET NULL"
         ),
-
         nullable=True
     )
 
-
-
-    # =========================
-    # CREATED AT
-    # =========================
-
     created_at = Column(
-
         DateTime(timezone=True),
-
         server_default=func.now()
     )
 
-
-
-    # =========================
-    # RELATIONSHIPS
-    # =========================
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
 
     client = relationship(
-
         "User",
-
         foreign_keys=[client_id]
     )
 
-
-
     lawyer = relationship(
-
         "User",
-
         foreign_keys=[lawyer_id]
     )
 
-
-
-    # =========================
-    # HEARINGS
-    # =========================
-
     hearings = relationship(
-
         "Hearing",
-
         back_populates="case",
-
         cascade="all, delete-orphan"
     )
-
-
-
-    # =========================
-    # TIMELINE EVENTS
-    # =========================
 
     timeline_events = relationship(
-
         "TimelineEvent",
-
+        back_populates="case",
         cascade="all, delete-orphan"
     )
 
-
-
-    # =========================
-    # DOCUMENTS
-    # =========================
-
     documents = relationship(
-
         "Document",
-
+        back_populates="case",
         cascade="all, delete-orphan"
     )

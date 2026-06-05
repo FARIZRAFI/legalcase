@@ -1,10 +1,6 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+# app/core/websocket.py
+from fastapi import WebSocket
 from typing import List
-
-router = APIRouter(
-    prefix="/ws",
-    tags=["WebSocket"]
-)
 
 class ConnectionManager:
     def __init__(self):
@@ -18,30 +14,19 @@ class ConnectionManager:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
 
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
-
-    async def broadcast(self, message: str):
+    async def broadcast_json(self, data: dict):
         disconnected_clients = []
         for connection in self.active_connections:
             try:
-                await connection.send_text(message)
+                await connection.send_json(data)
             except Exception:
                 disconnected_clients.append(connection)
-
         for dead_connection in disconnected_clients:
             self.disconnect(dead_connection)
 
+# The single, unified global instance shared across the entire system
 manager = ConnectionManager()
 
-@router.websocket("/notifications")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-
-async def broadcast_notification(message: str):
-    await manager.broadcast(message)
+async def broadcast_notification(title: str, message: str, notification_type: str = "General"):
+    payload = {"title": title, "message": message, "type": notification_type}
+    await manager.broadcast_json(payload)

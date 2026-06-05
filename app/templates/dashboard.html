@@ -1,734 +1,140 @@
 {% extends "base.html" %}
 
+{% block title %}Dashboard Overview | LexSuite Workspace{% endblock %}
+{% block page_heading %}Workspace Overview Dashboard{% endblock %}
+
 {% block content %}
-
-<div class="container-fluid py-4">
-
-    <!-- HEADER -->
-
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex items-center justify-between">
         <div>
-
-            <h2 class="fw-bold mb-1">
-                Dashboard
-            </h2>
-
-            <small class="text-muted">
-                Legal Case Management Analytics
-            </small>
-
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Litigation Files</span>
+            <h3 id="stat-cases" class="text-3xl font-black text-slate-900 mt-1">--</h3>
         </div>
-
-        <div class="d-flex gap-2">
-
-            <button
-                class="btn btn-primary"
-                onclick="refreshDashboard()"
-            >
-
-                <i class="fa-solid fa-rotate"></i>
-
-                Refresh
-
-            </button>
-
-            <button
-                class="btn btn-danger"
-                onclick="logout()"
-            >
-
-                <i class="fa-solid fa-right-from-bracket"></i>
-
-                Logout
-
-            </button>
-
+        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
+            <i class="fa-solid fa-folder-open"></i>
         </div>
-
     </div>
 
-
-
-    <!-- ANALYTICS CARDS -->
-
-    <div class="row g-4 mb-4">
-
-
-        <!-- TOTAL CASES -->
-
-        <div class="col-xl-3 col-md-6">
-
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between">
-
-                        <div>
-
-                            <h6 class="text-muted">
-                                Total Cases
-                            </h6>
-
-                            <h2
-                                class="fw-bold"
-                                id="totalCases"
-                            >
-
-                                0
-
-                            </h2>
-
-                        </div>
-
-                        <div class="bg-primary text-white rounded-circle p-3">
-
-                            <i class="fa-solid fa-scale-balanced"></i>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex items-center justify-between">
+        <div>
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scheduled Court Hearings</span>
+            <h3 id="stat-hearings" class="text-3xl font-black text-slate-900 mt-1">--</h3>
         </div>
-
-
-
-        <!-- ACTIVE CASES -->
-
-        <div class="col-xl-3 col-md-6">
-
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between">
-
-                        <div>
-
-                            <h6 class="text-muted">
-                                Active Cases
-                            </h6>
-
-                            <h2
-                                class="fw-bold text-success"
-                                id="activeCases"
-                            >
-
-                                0
-
-                            </h2>
-
-                        </div>
-
-                        <div class="bg-success text-white rounded-circle p-3">
-
-                            <i class="fa-solid fa-folder-open"></i>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
+        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
+            <i class="fa-solid fa-gavel"></i>
         </div>
-
-
-
-        <!-- CLOSED CASES -->
-
-        <div class="col-xl-3 col-md-6">
-
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between">
-
-                        <div>
-
-                            <h6 class="text-muted">
-                                Closed Cases
-                            </h6>
-
-                            <h2
-                                class="fw-bold text-danger"
-                                id="closedCases"
-                            >
-
-                                0
-
-                            </h2>
-
-                        </div>
-
-                        <div class="bg-danger text-white rounded-circle p-3">
-
-                            <i class="fa-solid fa-folder-closed"></i>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-        <!-- HEARINGS -->
-
-        <div class="col-xl-3 col-md-6">
-
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between">
-
-                        <div>
-
-                            <h6 class="text-muted">
-                                Hearings
-                            </h6>
-
-                            <h2
-                                class="fw-bold text-warning"
-                                id="totalHearings"
-                            >
-
-                                0
-
-                            </h2>
-
-                        </div>
-
-                        <div class="bg-warning text-white rounded-circle p-3">
-
-                            <i class="fa-solid fa-gavel"></i>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
     </div>
 
-
-
-    <!-- CHARTS -->
-
-    <div class="row g-4">
-
-
-        <!-- CHART -->
-
-        <div class="col-lg-8">
-
-            <div class="card border-0 shadow-sm rounded-4">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-
-                        <h5 class="fw-bold">
-                            Case Analytics
-                        </h5>
-
-                        <span class="badge bg-primary">
-                            Live Data
-                        </span>
-
-                    </div>
-
-                    <canvas
-                        id="caseChart"
-                        height="120"
-                    ></canvas>
-
-                </div>
-
-            </div>
-
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex items-center justify-between">
+        <div>
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Vaulted Case Documents</span>
+            <h3 id="stat-documents" class="text-3xl font-black text-slate-900 mt-1">--</h3>
         </div>
-
-
-
-        <!-- ACTIVITY -->
-
-        <div class="col-lg-4">
-
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between mb-4">
-
-                        <h5 class="fw-bold">
-                            Recent Activity
-                        </h5>
-
-                        <button
-                            class="btn btn-sm btn-outline-primary"
-                            onclick="loadDashboard()"
-                        >
-
-                            Refresh
-
-                        </button>
-
-                    </div>
-
-                    <div id="activityFeed"></div>
-
-                    <hr class="my-4">
-
-                    <h5 class="fw-bold mb-3">
-                        Upcoming Hearings
-                    </h5>
-
-                    <div id="upcomingHearingsDashboard"></div>
-
-                </div>
-
-            </div>
-
+        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
+            <i class="fa-solid fa-file-invoice"></i>
         </div>
-
     </div>
-
 </div>
 
-
-
-<!-- CHART JS -->
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
-
-<script>
-
-const token =
-localStorage.getItem(
-    "access_token"
-)
-
-
-
-// =========================
-// LOGIN CHECK
-// =========================
-
-if(!token){
-
-    window.location.href = "/"
-}
-
-
-
-let chartInstance = null
-
-
-
-// =========================
-// LOAD DASHBOARD
-// =========================
-
-async function loadDashboard(){
-
-    try{
-
-        const response =
-        await fetch(
-
-            "/dashboard/",
-
-            {
-
-                headers:{
-
-                    "Authorization":
-                    `Bearer ${token}`
-                }
-            }
-        )
-
-
-        if(!response.ok){
-
-            throw new Error(
-                "Unauthorized"
-            )
-        }
-
-
-        const data =
-        await response.json()
-
-        const analytics =
-        data.analytics
-
-
-
-        // =========================
-        // UPDATE CARDS
-        // =========================
-
-        document.getElementById(
-            "totalCases"
-        ).innerText =
-        analytics.total_cases
-
-
-        document.getElementById(
-            "activeCases"
-        ).innerText =
-        analytics.active_cases
-
-
-        document.getElementById(
-            "closedCases"
-        ).innerText =
-        analytics.closed_cases
-
-
-        document.getElementById(
-            "totalHearings"
-        ).innerText =
-        analytics.total_hearings
-
-
-
-        // =========================
-        // LOAD CHART
-        // =========================
-
-        loadChart(
-            analytics
-        )
-
-
-
-        // =========================
-        // LOAD ACTIVITY
-        // =========================
-
-        loadActivity(
-            data.recent_notifications
-        )
-
-    }
-
-    catch(error){
-
-        console.log(error)
-
-        alert(
-            "Session expired. Login again."
-        )
-
-        localStorage.clear()
-
-        window.location.href = "/"
-    }
-}
-
-
-
-// =========================
-// CHART
-// =========================
-
-function loadChart(data){
-
-    const ctx =
-    document.getElementById(
-        "caseChart"
-    )
-
-
-    // DESTROY OLD CHART
-    if(chartInstance){
-
-        chartInstance.destroy()
-    }
-
-
-    chartInstance =
-    new Chart(ctx,{
-
-        type:"bar",
-
-        data:{
-
-            labels:[
-
-                "Total Cases",
-
-                "Active Cases",
-
-                "Closed Cases",
-
-                "Hearings"
-            ],
-
-            datasets:[{
-
-                label:"Analytics",
-
-                data:[
-
-                    data.total_cases,
-
-                    data.active_cases,
-
-                    data.closed_cases,
-
-                    data.total_hearings
-                ],
-
-                borderRadius:10
-            }]
-        },
-
-        options:{
-
-            responsive:true,
-
-            plugins:{
-
-                legend:{
-                    display:false
-                }
-            }
-        }
-    })
-}
-
-
-
-// =========================
-// ACTIVITY FEED
-// =========================
-
-function loadActivity(notifications){
-
-    const feed =
-    document.getElementById(
-        "activityFeed"
-    )
-
-    feed.innerHTML = ""
-
-
-    if(
-
-        notifications &&
-
-        notifications.length > 0
-    ){
-
-        notifications.forEach(
-
-            notification=>{
-
-                feed.innerHTML += `
-
-                <div class="border rounded-4 p-3 mb-3">
-
-                    <div class="d-flex justify-content-between">
-
-                        <h6 class="fw-bold">
-
-                            ${notification.type}
-
-                        </h6>
-
-                        <span class="badge bg-primary">
-
-                            New
-
-                        </span>
-
-                    </div>
-
-                    <p class="mb-0 text-muted">
-
-                        ${notification.message}
-
-                    </p>
-
-                </div>
-                `
-            }
-        )
-
-    }else{
-
-        feed.innerHTML = `
-
-        <div class="text-muted">
-
-            No recent activity
-
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm p-6 flex flex-col">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+            <h3 class="font-bold text-slate-800 flex items-center space-x-2">
+                <i class="fa-solid fa-wave-square text-amber-500"></i>
+                <span>Live Action Workspace Feed</span>
+            </h3>
+            <span class="text-xs bg-slate-100 text-slate-600 font-semibold px-2 py-1 rounded-md uppercase tracking-wider">Real-time Updates</span>
         </div>
-        `
-    }
-}
+        <div id="dashboard-feed-wrapper" class="space-y-4 flex-1 overflow-y-auto max-h-[400px] pr-2">
+            <div class="text-center text-slate-400 text-sm py-12">Compiling structural live events...</div>
+        </div>
+    </div>
 
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 flex flex-col">
+        <div class="pb-4 border-b border-slate-100 mb-6">
+            <h3 class="font-bold text-slate-800 flex items-center space-x-2">
+                <i class="fa-solid fa-pie-chart text-amber-500"></i>
+                <span>Case Allocations</span>
+            </h3>
+        </div>
+        
+        <div class="flex-1 flex flex-col justify-center space-y-4">
+            {% for status in ['active', 'pending', 'closed'] %}
+            <div>
+                <div class="flex justify-between text-xs font-bold text-slate-500 mb-1">
+                    <span>{{ status|capitalize }} Matters</span>
+                    <span id="label-{{ status }}-ratio">0%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div id="bar-{{ status }}-ratio" class="h-full transition-all duration-500 {{ 'bg-blue-600' if status=='active' else 'bg-amber-500' if status=='pending' else 'bg-slate-400' }}" style="width: 0%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
 
+{% block scripts %}
+<script>
+    let isFetching = false;
 
-// =========================
-// UPCOMING HEARINGS
-// =========================
+    async function loadDashboardMetrics() {
+        if (isFetching) return;
+        isFetching = true;
 
-async function loadUpcomingHearingsDashboard(){
+        try {
+            const [summaryRes, feedRes] = await Promise.all([
+                fetch('/api/dashboard/summary'),
+                fetch('/api/dashboard/recent-feed')
+            ]);
 
-    try{
+            if (summaryRes.ok) {
+                const metricData = await summaryRes.json();
+                document.getElementById('stat-cases').innerText = metricData.counters.total_cases;
+                document.getElementById('stat-hearings').innerText = metricData.counters.total_hearings;
+                document.getElementById('stat-documents').innerText = metricData.counters.total_documents;
 
-        const response =
-        await fetch(
+                ['active', 'pending', 'closed'].forEach(s => {
+                    const percent = metricData.status_distribution.ratios[`${s}_percent`];
+                    document.getElementById(`label-${s}-ratio`).innerText = `${percent}%`;
+                    document.getElementById(`bar-${s}-ratio`).style.width = `${percent}%`;
+                });
+            }
 
-            "/hearings/upcoming",
-
-            {
-
-                headers:{
-
-                    "Authorization":
-                    `Bearer ${token}`
+            if (feedRes.ok) {
+                const feedItems = await feedRes.json();
+                const feedWrapper = document.getElementById('dashboard-feed-wrapper');
+                
+                if (feedItems.length === 0) {
+                    feedWrapper.innerHTML = `<div class="text-center text-slate-400 py-8 text-sm">No recent activity logs.</div>`;
+                } else {
+                    feedWrapper.innerHTML = feedItems.map(item => `
+                        <div class="p-4 bg-slate-50 border border-slate-100 rounded-xl flex items-start space-x-3 hover:bg-slate-100/60 transition">
+                            <div class="mt-1 w-2 h-2 rounded-full bg-amber-500 ring-4 ring-amber-100"></div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-sm font-bold text-slate-900 truncate">${item.title}</h4>
+                                <p class="text-xs text-slate-600 mt-0.5">${item.description}</p>
+                                <span class="text-[10px] text-slate-400 font-medium block mt-2">
+                                    <i class="fa-regular fa-clock mr-1"></i>${new Date(item.timestamp).toLocaleString()}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('');
                 }
             }
-        )
-
-
-        const hearings =
-        await response.json()
-
-
-        const container =
-        document.getElementById(
-            "upcomingHearingsDashboard"
-        )
-
-        container.innerHTML = ""
-
-
-        if(hearings.length === 0){
-
-            container.innerHTML = `
-
-                <div class="text-muted">
-
-                    No upcoming hearings
-
-                </div>
-
-            `
-
-            return
+        } catch (err) {
+            console.error("Dashboard synchronization error:", err);
+        } finally {
+            isFetching = false;
         }
-
-
-        hearings.forEach(hearing=>{
-
-            container.innerHTML += `
-
-                <div class="border rounded-4 p-3 mb-3">
-
-                    <h6 class="fw-bold">
-
-                        ${hearing.title || "Hearing"}
-
-                    </h6>
-
-                    <p class="mb-1">
-
-                        📍 ${hearing.location}
-
-                    </p>
-
-                    <small class="text-muted">
-
-                        ${new Date(
-                            hearing.hearing_date
-                        ).toLocaleString()}
-
-                    </small>
-
-                    <div class="mt-2">
-
-                        <span class="badge bg-warning text-dark">
-
-                            ${hearing.status}
-
-                        </span>
-
-                    </div>
-
-                </div>
-
-            `
-        })
-
     }
 
-    catch(error){
-
-        console.log(error)
+    function triggerLiveAlertToast(rawMessage) {
+        // Debounce subsequent calls to prevent rapid-fire network spam
+        loadDashboardMetrics();
     }
-}
 
-
-
-// =========================
-// REFRESH
-// =========================
-
-function refreshDashboard(){
-
-    loadDashboard()
-
-    loadUpcomingHearingsDashboard()
-}
-
-
-
-// =========================
-// LOGOUT
-// =========================
-
-function logout(){
-
-    localStorage.clear()
-
-    window.location.href = "/"
-}
-
-
-
-// =========================
-// INITIAL LOAD
-// =========================
-
-loadDashboard()
-
-loadUpcomingHearingsDashboard()
-
+    window.addEventListener('DOMContentLoaded', loadDashboardMetrics);
 </script>
-
 {% endblock %}

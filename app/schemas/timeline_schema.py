@@ -1,20 +1,17 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Optional
 from datetime import datetime
 
+class TimelineBase(BaseModel):
+    case_id: int = Field(..., description="The associated legal case ID")
+    title: str = Field(..., min_length=1, max_length=200, description="Title of the timeline event")
+    description: str = Field(..., description="Detailed logs and field histories of the case update")
 
-class TimelineCreate(BaseModel):
+class TimelineCreate(TimelineBase):
+    pass
 
-    case_id: int
-    title: str
-    description: str
-
-
-class TimelineResponse(BaseModel):
-
+class TimelineResponse(TimelineBase):
     id: int
-    case_id: int
-    title: str
-    description: str
     created_at: datetime
 
     class Config:

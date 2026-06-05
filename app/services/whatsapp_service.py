@@ -1,57 +1,59 @@
 import os
 from twilio.rest import Client
 
-# =========================
-# ENV VARIABLES
-# =========================
+# =========================================================================
+# PRODUCTION ENVIRONMENT VARIABLE CONFIGURATION
+# =========================================================================
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
 
-# Ensure the sender number has the mandatory 'whatsapp:' prefix
+# Ensure the sender number has the mandatory Twilio gateway 'whatsapp:' prefix
 if TWILIO_WHATSAPP_NUMBER and not TWILIO_WHATSAPP_NUMBER.startswith("whatsapp:"):
     TWILIO_WHATSAPP_NUMBER = f"whatsapp:{TWILIO_WHATSAPP_NUMBER}"
 
-# =========================
-# TWILIO CLIENT
-# =========================
-client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-
-# =========================
-# SEND WHATSAPP MESSAGE
-# =========================
-def send_whatsapp_message(to_number: str, message: str):
+# =========================================================================
+# AUTOMATED OUTBOUND CLIENT MESSAGING ENGINE
+# =========================================================================
+def send_whatsapp_message(to_number: str, message: str) -> dict:
+    """
+    Sanitizes target mobile numbers to enforce country code parameters, lazily instantiates 
+    the external REST client API wrapper, and dispatches the outbound transaction body.
+    """
     try:
         print("\n=========================")
         print("TWILIO WHATSAPP STARTED")
         print("=========================")
 
-        # 1. Clean up spaces or brackets
+        # 1. CLEAN UP WHITESPACE PADDING
         clean_number = to_number.strip()
 
-        # 2. Strip out 'whatsapp:' if it was accidentally passed twice
+        # 2. STRIP OUT DUPLICATE PREFIXES
         if clean_number.startswith("whatsapp:"):
             clean_number = clean_number.replace("whatsapp:", "").strip()
 
-        # 3. CRITICAL: Automatically inject the +91 country prefix if missing
+        # 3. COUNTRY CODE CONFIGURATION MATRICES (Enforces India Prefix Logic)
         if not clean_number.startswith("+"):
-            # If it's a standard 10-digit Indian number, snap +91 to the front
             if len(clean_number) == 10:
                 clean_number = f"+91{clean_number}"
-            else:
-                # Fallback safeguard for numbers that might already have '91' but no '+'
-                if clean_number.startswith("91") and len(clean_number) == 12:
-                    clean_number = f"+{clean_number}"
+            elif clean_number.startswith("91") and len(clean_number) == 12:
+                clean_number = f"+{clean_number}"
 
-        # 4. Final Twilio string packaging
+        # 4. PACKAGE THE TARGET RECIPIENT URI CORRESPONDENCE
         formatted_to = f"whatsapp:{clean_number}"
 
-        print("ACCOUNT SID:", TWILIO_ACCOUNT_SID)
-        print("FROM NUMBER:", TWILIO_WHATSAPP_NUMBER)
-        print("TO NUMBER:", formatted_to)
-        print("MESSAGE:", message)
+        print(f"ACCOUNT SID: {TWILIO_ACCOUNT_SID}")
+        print(f"FROM NUMBER: {TWILIO_WHATSAPP_NUMBER}")
+        print(f"TO NUMBER: {formatted_to}")
+        print(f"MESSAGE: {message}")
 
-        # SEND MESSAGE VIA CLIENT
+        # 5. LAZY OPERATIONAL INITIALIZATION GUARD (Prevents boot startup crashes)
+        if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
+            raise ValueError("Twilio application gateway authentication configuration secrets are missing from context variables.")
+
+        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
+        # 6. DISPATCH GATEWAY OPERATION EXECUTION
         response = client.messages.create(
             body=message,
             from_=TWILIO_WHATSAPP_NUMBER,
@@ -61,7 +63,7 @@ def send_whatsapp_message(to_number: str, message: str):
         print("=========================")
         print("WHATSAPP SENT SUCCESS")
         print("=========================")
-        print("MESSAGE SID:", response.sid)
+        print(f"MESSAGE SID: {response.sid}")
 
         return {"success": True, "sid": response.sid}
 

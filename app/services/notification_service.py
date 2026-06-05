@@ -1,212 +1,31 @@
-from app.models.notification_model import (
-    Notification
-)
+from app.models.notification_model import Notification
+from app.core.websocket import broadcast_notification  # Clean, unidirectional flow
 
-
-
-# =========================
-# CREATE SYSTEM NOTIFICATION
-# =========================
-
-async def create_system_notification(
-
-    db,
-
-    user_id: int,
-
-    title: str,
-
-    message: str,
-
-    notification_type: str
-):
-
+async def create_system_notification(db, user_id: int, title: str, message: str, notification_type: str):
     try:
-
-
-        notification = Notification(
-
-            user_id=user_id,
-
-            title=title,
-
-            message=message,
-
-            type=notification_type
-        )
-
-
-
+        notification = Notification(user_id=user_id, title=title, message=message, type=notification_type)
         db.add(notification)
-
         db.commit()
-
         db.refresh(notification)
 
-
-
-        print(
-            f"Notification created: {title}"
-        )
-
-
-
-        # =========================
-        # SAFE WEBSOCKET IMPORT
-        # =========================
-
+        # Triggers broadcast directly without circular dependencies
         try:
-
-            from app.routes.notification_routes import (
-                broadcast_notification
-            )
-
-
-
-            await broadcast_notification(
-
-                f"{title} - {message}"
-            )
-
-
-
-        except Exception as websocket_error:
-
-
-            print(
-                "WebSocket broadcast failed:"
-            )
-
-            print(str(websocket_error))
-
-
+            await broadcast_notification(title, message, notification_type)
+        except Exception as ws_err:
+            print(f"WebSocket broadcast failed: {str(ws_err)}")
 
         return notification
-
-
-
     except Exception as e:
-
-
         db.rollback()
-
-
-
-        print(
-            "Notification creation failed:"
-        )
-
-        print(str(e))
-
-
-
         return None
 
-
-
-# =========================
-# BULK NOTIFICATIONS
-# =========================
-
-async def create_bulk_notifications(
-
-    db,
-
-    user_ids: list,
-
-    title: str,
-
-    message: str,
-
-    notification_type: str
-):
-
-    created_notifications = []
-
-
-
+def create_system_notification_sync(db, user_id: int, title: str, message: str, notification_type: str):
     try:
-
-
-        for user_id in user_ids:
-
-
-            notification = Notification(
-
-                user_id=user_id,
-
-                title=title,
-
-                message=message,
-
-                type=notification_type
-            )
-
-
-
-            db.add(notification)
-
-            created_notifications.append(
-                notification
-            )
-
-
-
+        notification = Notification(user_id=user_id, title=title, message=message, type=notification_type)
+        db.add(notification)
         db.commit()
-
-
-
-        print(
-            f"{len(created_notifications)} notifications created"
-        )
-
-
-
-        return created_notifications
-
-
-
+        db.refresh(notification)
+        return notification
     except Exception as e:
-
-
         db.rollback()
-
-
-
-        print(
-            "Bulk notification failed:"
-        )
-
-        print(str(e))
-
-
-
-        return []
-
-
-
-# =========================
-# CREATE SIMPLE NOTIFICATION
-# =========================
-
-async def create_simple_notification(
-
-    db,
-
-    user_id: int,
-
-    message: str
-):
-
-    return await create_system_notification(
-
-        db=db,
-
-        user_id=user_id,
-
-        title="System Notification",
-
-        message=message,
-
-        notification_type="system"
-    )
+        return None

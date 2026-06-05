@@ -1,175 +1,50 @@
-from datetime import (
-    datetime,
-    timedelta
-)
+from datetime import datetime, timedelta
+from sqlalchemy.orm import Session, joinedload
+from app.models.hearing_model import Hearing
+from app.models.notification_model import Notification
 
-from sqlalchemy.orm import Session
-
-from app.models.hearing_model import (
-    Hearing
-)
-
-from app.models.notification_model import (
-    Notification
-)
-
-
-
-# =========================
-# CREATE HEARING REMINDERS
-# =========================
-
-def create_hearing_reminders(
-    db: Session
-):
-
+def create_hearing_reminders(db: Session) -> dict:
     try:
+        tomorrow_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        tomorrow_end = tomorrow_start + timedelta(hours=23, minutes=59, seconds=59)
 
-
-        # TOMORROW DATE
-        tomorrow = (
-
-            datetime.utcnow() +
-
-            timedelta(days=1)
-        ).date()
-
-
-
-        # GET HEARINGS
-        hearings = db.query(
-            Hearing
-        ).all()
-
-
+        # Eager load the parent case relations
+        hearings = (
+            db.query(Hearing)
+            .options(joinedload(Hearing.case))
+            .filter(Hearing.hearing_date >= tomorrow_start, Hearing.hearing_date <= tomorrow_end, Hearing.status.in_(["Scheduled", "Upcoming"]))
+            .all()
+        )
 
         created_notifications = []
 
-
-
         for hearing in hearings:
-
-
-            # SAFE DATE CHECK
-            if not hearing.hearing_date:
-
+            if not hearing.hearing_date or not hearing.case:
                 continue
 
-
-
-            # ONLY UPCOMING
-            if hearing.status not in [
-
-                "Scheduled",
-
-                "Upcoming"
-            ]:
-
-                continue
-
-
-
-            hearing_date = (
-                hearing.hearing_date.date()
+            existing_notification = (
+                db.query(Notification)
+                .filter(Notification.message.ilike(f"%case {hearing.case_id}%"), Notification.type == "hearing")
+                .first()
             )
 
+            if existing_notification:
+                continue
 
+            # Multi-user dynamic routing: Uses the actual client_id linked to the specific case
+            notification = Notification(
+                user_id=hearing.case.client_id,  
+                title="Upcoming Hearing",
+                message=f"Hearing for case {hearing.case_id} is scheduled tomorrow",
+                type="hearing"
+            )
 
-            # CHECK TOMORROW
-            if hearing_date == tomorrow:
-
-
-
-                # PREVENT DUPLICATE REMINDERS
-                existing_notification = db.query(
-                    Notification
-                ).filter(
-
-                    Notification.message.ilike(
-                        f"%case {hearing.case_id}%"
-                    ),
-
-                    Notification.type == "hearing"
-                ).first()
-
-
-
-                if existing_notification:
-
-                    continue
-
-
-
-                # CREATE NOTIFICATION
-                notification = Notification(
-
-                    user_id=1,
-
-                    title="Upcoming Hearing",
-
-                    message=(
-                        f"Hearing for case "
-                        f"{hearing.case_id} "
-                        f"is scheduled tomorrow"
-                    ),
-
-                    type="hearing"
-                )
-
-
-
-                db.add(notification)
-
-                created_notifications.append(
-                    notification
-                )
-
-
+            db.add(notification)
+            created_notifications.append(notification)
 
         db.commit()
-
-
-
-        print(
-            f"{len(created_notifications)} hearing reminders created"
-        )
-
-
-
-        return {
-
-            "success":
-            True,
-
-            "message":
-            "Hearing reminders created successfully",
-
-            "count":
-            len(created_notifications)
-        }
-
-
+        return {"success": True, "message": "Hearing reminders processed", "count": len(created_notifications)}
 
     except Exception as e:
-
-
         db.rollback()
-
-
-
-        print(
-            "Reminder creation failed:"
-        )
-
-        print(str(e))
-
-
-
-        return {
-
-            "success":
-            False,
-
-            "error":
-            str(e)
-        }
+        return {"success": False, "error": str(e)}

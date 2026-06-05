@@ -1,287 +1,114 @@
-from fastapi import (
-    APIRouter,
-    Depends
-)
-
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from datetime import datetime, timedelta
+from app.database import get_db
 
-from datetime import datetime
-
-from app.database import SessionLocal
-
-from app.models.case_model import (
-    Case
-)
-
-from app.models.hearing_model import (
-    Hearing
-)
-
-from app.models.notification_model import (
-    Notification
-)
-
-from app.models.document_model import (
-    Document
-)
-
-from app.services.auth_service import (
-    verify_token
-)
-
+from app.models.case_model import Case
+from app.models.hearing_model import Hearing
+from app.models.document_model import Document
+from app.models.timeline_model import TimelineEvent
+from app.services.auth_service import verify_token
 
 router = APIRouter(
-    prefix="/dashboard",
-    tags=["Dashboard"]
+    prefix="/api/dashboard",
+    tags=["Dashboard Analytics"]
 )
 
-
-
-# =========================
-# DATABASE CONNECTION
-# =========================
-
-def get_db():
-
-    db = SessionLocal()
-
-    try:
-        yield db
-
-    finally:
-        db.close()
-
-
-
-# =========================
-# DASHBOARD ANALYTICS
-# =========================
-
-@router.get("/")
-def get_dashboard_data(
-
+# =========================================================================
+# DETAILED ANALYTICS AGGREGATION ENGINE
+# Compiles structured statistical distributions for frontend charts
+# =========================================================================
+@router.get("/summary")
+def get_dashboard_extended_summary(
     db: Session = Depends(get_db),
-
     user_data: dict = Depends(verify_token)
 ):
-
-
-    # =========================
-    # CASE ANALYTICS
-    # =========================
-
-    total_cases = db.query(
-        Case
-    ).count()
-
-
-    active_cases = db.query(
-        Case
-    ).filter(
-
-        Case.case_status == "Active"
-
-    ).count()
-
-
-    closed_cases = db.query(
-        Case
-    ).filter(
-
-        Case.case_status == "Closed"
-
-    ).count()
-
-
-    pending_cases = db.query(
-        Case
-    ).filter(
-
-        Case.case_status == "Pending"
-
-    ).count()
-
-
-
-    # =========================
-    # HEARING ANALYTICS
-    # =========================
-
-    total_hearings = db.query(
-        Hearing
-    ).count()
-
-
-    upcoming_hearings = db.query(
-        Hearing
-    ).filter(
-
-        Hearing.hearing_date >= datetime.utcnow()
-
-    ).count()
-
-
-
-    # =========================
-    # DOCUMENT ANALYTICS
-    # =========================
-
-    total_documents = db.query(
-        Document
-    ).count()
-
-
-
-    # =========================
-    # NOTIFICATION ANALYTICS
-    # =========================
-
-    total_notifications = db.query(
-        Notification
-    ).filter(
-
-        Notification.user_id == user_data["user_id"]
-
-    ).count()
-
-
-
-    # =========================
-    # RECENT CASES
-    # =========================
-
-    recent_cases_query = db.query(
-        Case
-    ).order_by(
-
-        Case.id.desc()
-
-    ).limit(5).all()
-
-
-    recent_cases = []
-
-
-    for case in recent_cases_query:
-
-        recent_cases.append({
-
-            "id":
-            case.id,
-
-            "title":
-            case.case_title,
-
-            "status":
-            case.case_status,
-
-            "lawyer_id":
-            case.lawyer_id,
-
-            "client_id":
-            case.client_id
-        })
-
-
-
-    # =========================
-    # RECENT NOTIFICATIONS
-    # =========================
-
-    recent_notifications_query = db.query(
-        Notification
-    ).filter(
-
-        Notification.user_id == user_data["user_id"]
-
-    ).order_by(
-
-        Notification.id.desc()
-
-    ).limit(5).all()
-
-
-    recent_notifications = []
-
-
-    for notification in recent_notifications_query:
-
-        recent_notifications.append({
-
-            "id":
-            notification.id,
-
-            "title":
-            notification.title,
-
-            "message":
-            notification.message,
-
-            "type":
-            notification.type,
-
-            "is_read":
-            notification.is_read
-        })
-
-
-
-    # =========================
-    # SUCCESS RATE
-    # =========================
-
-    success_rate = 0
-
-
-    if total_cases > 0:
-
-        success_rate = (
-
-            closed_cases / total_cases
-
-        ) * 100
-
-
-
-    # =========================
-    # FINAL RESPONSE
-    # =========================
-
-    return {
-
-        "analytics": {
-
-            "total_cases":
-            total_cases,
-
-            "active_cases":
-            active_cases,
-
-            "closed_cases":
-            closed_cases,
-
-            "pending_cases":
-            pending_cases,
-
-            "total_hearings":
-            total_hearings,
-
-            "upcoming_hearings":
-            upcoming_hearings,
-
-            "total_documents":
-            total_documents,
-
-            "total_notifications":
-            total_notifications,
-
-            "success_rate":
-            round(success_rate, 2)
-        },
-
-        "recent_cases":
-        recent_cases,
-
-        "recent_notifications":
-        recent_notifications
-    }
+    """
+    Assembles a unified metadata response containing status splits, system totals,
+    and a weekly event volume timeline used to render dashboard metrics.
+    """
+    try:
+        # 1. Total KPI Metrics Counts
+        total_cases = db.query(Case).count()
+        total_hearings = db.query(Hearing).count()
+        total_documents = db.query(Document).count()
+
+        # 2. Case Status Percentage Distribution Splits
+        active_count = db.query(Case).filter(Case.case_status == "Active").count()
+        closed_count = db.query(Case).filter(Case.case_status == "Closed").count()
+        pending_count = db.query(Case).filter(Case.case_status == "Pending").count()
+
+        # 3. Time-Series Aggregation: Activity volume over the last 7 days
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        
+        timeline_activity = (
+            db.query(
+                func.to_char(TimelineEvent.created_at, 'YYYY-MM-DD').label('date'),
+                func.count(TimelineEvent.id).label('count')
+            )
+            .filter(TimelineEvent.created_at >= seven_days_ago)
+            .group_by('date')
+            .order_by('date')
+            .all()
+        )
+
+        # Structure time-series list cleanly for chart data targets
+        activity_trends = [{"date": row.date, "events": row.count} for row in timeline_activity]
+
+        return {
+            "counters": {
+                "total_cases": total_cases,
+                "total_hearings": total_hearings,
+                "total_documents": total_documents
+            },
+            "status_distribution": {
+                "active": active_count,
+                "closed": closed_count,
+                "pending": pending_count,
+                "ratios": {
+                    "active_percent": round((active_count / total_cases * 100), 2) if total_cases > 0 else 0,
+                    "closed_percent": round((closed_count / total_cases * 100), 2) if total_cases > 0 else 0,
+                    "pending_percent": round((pending_count / total_cases * 100), 2) if total_cases > 0 else 0,
+                }
+            },
+            "activity_trends": activity_trends
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to calculate analytics overview metrics: {str(e)}"
+        )
+
+# =========================================================================
+# LATEST WORKSPACE FEEDS (JOIN FREE)
+# Pulls the 5 most critical high-priority contextual updates for the user feed
+# =========================================================================
+@router.get("/recent-feed")
+def get_dashboard_recent_feed(
+    limit: int = 5,
+    db: Session = Depends(get_db),
+    user_data: dict = Depends(verify_token)
+):
+    """
+    Returns an activity feed snapshot of the newest historical events 
+    across the legal workspace framework.
+    """
+    recent_events = (
+        db.query(TimelineEvent)
+        .order_by(TimelineEvent.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    return [
+        {
+            "id": event.id,
+            "case_id": event.case_id,
+            "title": event.title,
+            "description": event.description,
+            "timestamp": event.created_at.isoformat() if event.created_at else None
+        }
+        for event in recent_events
+    ]

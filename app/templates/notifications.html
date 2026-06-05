@@ -1,527 +1,106 @@
 {% extends "base.html" %}
 
+{% block title %}Notification Center | LexSuite Workspace{% endblock %}
+{% block page_heading %}Real-Time System Notifications{% endblock %}
+
 {% block content %}
-
-<div class="container-fluid py-4">
-
-    <!-- HEADER -->
-
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-
+<div class="max-w-4xl mx-auto bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+    <div class="p-6 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
         <div>
-
-            <h2 class="fw-bold">
-                Notifications
-            </h2>
-
-            <p class="text-muted">
-                Real-time alerts and updates
-            </p>
-
+            <h2 class="font-bold text-slate-900 text-base">Alert Feed & Communication Log</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Live background stream processing websocket broadcast alerts.</p>
         </div>
-
-        <div class="d-flex gap-2">
-
-            <button
-                class="btn btn-primary"
-                onclick="refreshNotifications()"
-            >
-
-                <i class="fa-solid fa-rotate"></i>
-
-                Refresh
-
-            </button>
-
-        </div>
-
+        <span id="unread-count-badge" class="hidden px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500 text-white shadow-sm">0 Unread</span>
     </div>
 
-
-
-    <!-- NOTIFICATIONS -->
-
-    <div id="notificationContainer">
-
-        <div class="text-center py-5">
-
-            <div
-                class="spinner-border text-primary"
-            ></div>
-
-        </div>
-
+    <div id="notifications-feed-container" class="divide-y divide-slate-100">
+        <div class="text-center py-12 text-slate-400 text-sm">Connecting to real-time notification cluster node...</div>
     </div>
-
 </div>
+{% endblock %}
 
-
-
+{% block scripts %}
 <script>
-
-const token =
-localStorage.getItem(
-    "access_token"
-)
-
-
-
-// =========================
-// LOGIN CHECK
-// =========================
-
-if(!token){
-
-    window.location.href = "/"
-}
-
-
-
-let socket = null
-
-
-
-// =========================
-// INITIAL LOAD
-// =========================
-
-document.addEventListener(
-
-    "DOMContentLoaded",
-
-    ()=>{
-
-        loadNotificationsPage()
-
-        initializeWebSocket()
-    }
-)
-
-
-
-// =========================
-// AUTH HEADERS
-// =========================
-
-function getHeaders(){
-
-    return {
-
-        "Authorization":
-        `Bearer ${token}`,
-
-        "Content-Type":
-        "application/json"
-    }
-}
-
-
-
-// =========================
-// LOAD NOTIFICATIONS
-// =========================
-
-async function loadNotificationsPage(){
-
-    try{
-
-        const response =
-        await fetch(
-
-            `${window.location.origin}/notifications/`,
-
-            {
-
-                method:"GET",
-
-                headers:getHeaders()
-            }
-        )
-
-
-
-        if(response.status === 401){
-
-            handleSessionExpired()
-
-            return
-        }
-
-
-
-        const notifications =
-        await response.json()
-
-
-
-        renderNotifications(
-            notifications
-        )
-
-    }
-
-    catch(error){
-
-        console.log(error)
-
-        alert(
-            "Error loading notifications"
-        )
-    }
-}
-
-
-
-// =========================
-// RENDER NOTIFICATIONS
-// =========================
-
-function renderNotifications(notifications){
-
-    const container =
-    document.getElementById(
-        "notificationContainer"
-    )
-
-
-
-    container.innerHTML = ""
-
-
-
-    if(
-
-        !notifications ||
-
-        notifications.length === 0
-    ){
-
-        container.innerHTML = `
-
-            <div class="alert alert-info rounded-4">
-
-                No notifications found
-
-            </div>
-
-        `
-
-        return
-    }
-
-
-
-    notifications.forEach(notification=>{
-
-        container.innerHTML += `
-
-            <div class="card border-0 shadow-sm rounded-4 mb-3">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-
-                        <div>
-
-                            <div class="d-flex align-items-center gap-2 mb-2">
-
-                                <h5 class="fw-bold mb-0">
-
-                                    ${notification.title || "Notification"}
-
-                                </h5>
-
-                                <span class="badge bg-primary">
-
-                                    ${notification.type || "Update"}
-
-                                </span>
-
-                            </div>
-
-                            <p class="mb-2">
-
-                                ${notification.message || ""}
-
-                            </p>
-
-                            <small class="text-muted">
-
-                                Notification ID:
-                                ${notification.id}
-
-                            </small>
-
-                        </div>
-
-                        <div class="d-flex gap-2">
-
-                            <button
-                                class="btn btn-success btn-sm"
-                                onclick="markAsRead(${notification.id})"
-                            >
-
-                                <i class="fa-solid fa-check"></i>
-
-                            </button>
-
-                            <button
-                                class="btn btn-danger btn-sm"
-                                onclick="deleteNotification(${notification.id})"
-                            >
-
-                                <i class="fa-solid fa-trash"></i>
-
-                            </button>
-
-                        </div>
-
+    // HELPER: Render a notification card to avoid duplication logic
+    function createNotificationHTML(n) {
+        const cardStyle = n.is_read ? 'bg-white' : 'bg-amber-50/30 border-l-4 border-amber-500';
+        return `
+            <div id="notification-row-${n.id}" class="p-5 flex items-start justify-between gap-4 transition ${cardStyle}">
+                <div class="flex items-start space-x-3.5">
+                    <div class="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-sm ${n.is_read ? 'text-slate-400' : 'text-amber-500'}">
+                        <i class="fa-solid ${n.type === 'hearing' ? 'fa-gavel' : 'fa-bell'}"></i>
                     </div>
-
+                    <div>
+                        <h4 class="text-sm font-bold ${n.is_read ? 'text-slate-700' : 'text-slate-900'}">${n.title}</h4>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">${n.message}</p>
+                    </div>
                 </div>
+                <div class="flex items-center space-x-4">
+                    ${!n.is_read ? `<button onclick="markAsRead(${n.id})" class="text-xs font-bold text-slate-700 hover:text-amber-600 transition flex items-center space-x-1"><i class="fa-solid fa-check"></i><span>Dismiss</span></button>` : ''}
+                </div>
+            </div>`;
+    }
 
-            </div>
-
-        `
-    })
-}
-
-
-
-// =========================
-// MARK AS READ
-// =========================
-
-async function markAsRead(notificationId){
-
-    try{
-
-        const response =
-        await fetch(
-
-            `${window.location.origin}/notifications/${notificationId}`,
-
-            {
-
-                method:"PUT",
-
-                headers:getHeaders()
-            }
-        )
-
-
-
-        const data =
-        await response.json()
-
-
-
-        if(!response.ok){
-
-            alert(
-
-                data.detail ||
-                "Failed to mark notification"
-            )
-
-            return
+    async function fetchNotifications() {
+        const container = document.getElementById('notifications-feed-container');
+        try {
+            const response = await fetch('/api/notifications/');
+            if (!response.ok) throw new Error("Failed to load datastores.");
+            
+            const notifications = await response.json();
+            container.innerHTML = notifications.length > 0 
+                ? notifications.map(createNotificationHTML).join('')
+                : `<div class="text-center py-12 text-slate-400 text-sm">Your alert box is empty.</div>`;
+            
+            updateUnreadBadge(notifications);
+        } catch (err) {
+            container.innerHTML = `<div class="text-center py-12 text-rose-600 text-sm">${err.message}</div>`;
         }
-
-
-
-        loadNotificationsPage()
-
     }
 
-    catch(error){
-
-        console.log(error)
-
-        alert(
-            "Failed to update notification"
-        )
-    }
-}
-
-
-
-// =========================
-// DELETE NOTIFICATION
-// =========================
-
-async function deleteNotification(notificationId){
-
-    const confirmed = confirm(
-        "Delete this notification?"
-    )
-
-
-    if(!confirmed){
-
-        return
-    }
-
-
-
-    try{
-
-        const response =
-        await fetch(
-
-            `${window.location.origin}/notifications/${notificationId}`,
-
-            {
-
-                method:"DELETE",
-
-                headers:getHeaders()
-            }
-        )
-
-
-
-        const data =
-        await response.json()
-
-
-
-        if(!response.ok){
-
-            alert(
-
-                data.detail ||
-                "Delete failed"
-            )
-
-            return
+    function updateUnreadBadge(notifications) {
+        const badge = document.getElementById('unread-count-badge');
+        const unreadCount = notifications.filter(n => !n.is_read).length;
+        if (unreadCount > 0) {
+            badge.innerText = `${unreadCount} Unread`;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
         }
-
-
-
-        alert(
-            data.message
-        )
-
-
-
-        loadNotificationsPage()
-
     }
 
-    catch(error){
-
-        console.log(error)
-
-        alert(
-            "Delete failed"
-        )
-    }
-}
-
-
-
-// =========================
-// REFRESH
-// =========================
-
-function refreshNotifications(){
-
-    loadNotificationsPage()
-}
-
-
-
-// =========================
-// SESSION EXPIRED
-// =========================
-
-function handleSessionExpired(){
-
-    alert(
-        "Session expired"
-    )
-
-    localStorage.clear()
-
-    window.location.href = "/"
-}
-
-
-
-// =========================
-// WEBSOCKET
-// =========================
-
-function initializeWebSocket(){
-
-    try{
-
-        const protocol =
-
-            window.location.protocol === "https:"
-            ? "wss"
-            : "ws"
-
-
-        socket =
-        new WebSocket(
-
-            `${protocol}://${window.location.host}/notifications/ws`
-        )
-
-
-
-        socket.onopen = ()=>{
-
-            console.log(
-                "WebSocket Connected"
-            )
-        }
-
-
-
-        socket.onmessage = (event)=>{
-
-            console.log(
-
-                "New Notification:",
-
-                event.data
-            )
-
-
-
-            // AUTO REFRESH
-            loadNotificationsPage()
-        }
-
-
-
-        socket.onclose = ()=>{
-
-            console.log(
-                "WebSocket Closed"
-            )
-
-
-
-            // AUTO RECONNECT
-            setTimeout(
-
-                initializeWebSocket,
-
-                3000
-            )
-        }
-
+    async function markAsRead(id) {
+        try {
+            await fetch(`/api/notifications/${id}`, { method: 'PUT' });
+            fetchNotifications(); // Full refresh is okay for explicit user dismissals
+        } catch (err) { alert(err.message); }
     }
 
-    catch(error){
+    function initializeWebSocketConnection() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(`${protocol}//${window.location.host}/api/notifications/ws`);
 
-        console.log(error)
+        socket.onmessage = function(event) {
+            // OPTIMIZATION: Parse the new notification and prepend instead of refreshing all
+            const newNotif = JSON.parse(event.data);
+            const container = document.getElementById('notifications-feed-container');
+            const newElement = document.createElement('div');
+            newElement.innerHTML = createNotificationHTML(newNotif);
+            container.prepend(newElement.firstElementChild);
+            
+            // Increment UI count logic
+            const badge = document.getElementById('unread-count-badge');
+            let count = parseInt(badge.innerText) || 0;
+            badge.innerText = `${count + 1} Unread`;
+            badge.classList.remove('hidden');
+        };
+
+        socket.onclose = () => setTimeout(initializeWebSocketConnection, 5000);
     }
-}
 
+    window.addEventListener('DOMContentLoaded', () => {
+        fetchNotifications();
+        initializeWebSocketConnection();
+    });
 </script>
-
 {% endblock %}

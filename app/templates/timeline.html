@@ -1,347 +1,84 @@
 {% extends "base.html" %}
 
+{% block title %}Case History Timeline | LexSuite Workspace{% endblock %}
+{% block page_heading %}Case Milestone Audit Log History{% endblock %}
+
 {% block content %}
-
-<div class="container-fluid py-4">
-
-    <!-- HEADER -->
-
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-
-        <div>
-
-            <h2 class="fw-bold mb-1">
-                Case Timeline
-            </h2>
-
-            <small class="text-muted">
-                Full activity history & audit trail
-            </small>
-
-        </div>
-
-        <div class="d-flex gap-2 flex-wrap">
-
-            <input
-                type="number"
-                id="caseIdInput"
-                class="form-control"
-                placeholder="Enter Case ID"
-                style="width:180px;"
-            >
-
-            <button
-                class="btn btn-primary"
-                onclick="loadTimeline()"
-            >
-                <i class="fa-solid fa-clock-rotate-left"></i>
-                Load Timeline
-            </button>
-
-            <button
-                class="btn btn-outline-dark"
-                onclick="refreshTimeline()"
-            >
-                Refresh
-            </button>
-
-        </div>
-
-    </div>
-
-
-
-    <!-- TIMELINE -->
-
-    <div id="timelineContainer">
-
-        <div class="alert alert-info rounded-4">
-            Enter a Case ID to load timeline
-        </div>
-
-    </div>
-
-</div>
-
-
-
-<style>
-
-.timeline{
-    position:relative;
-    margin-left:20px;
-    padding-left:30px;
-    border-left:4px solid #2563eb;
-}
-
-.timeline-item{
-    position:relative;
-    margin-bottom:30px;
-}
-
-.timeline-dot{
-    width:18px;
-    height:18px;
-    border-radius:50%;
-    background:#2563eb;
-    position:absolute;
-    left:-40px;
-    top:10px;
-    border:4px solid white;
-    box-shadow:0 0 0 3px #2563eb;
-}
-
-.timeline-card{
-    background:white;
-    border-radius:18px;
-    padding:20px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.08);
-    transition:0.2s;
-}
-
-.timeline-card:hover{
-    transform:translateY(-2px);
-}
-
-.timeline-title{
-    font-weight:bold;
-    font-size:18px;
-}
-
-.timeline-time{
-    font-size:13px;
-    color:#64748b;
-}
-
-.timeline-description{
-    margin-top:10px;
-    color:#334155;
-    white-space:pre-line;
-}
-
-.timeline-actions{
-    margin-top:15px;
-}
-
-</style>
-
-
-
-<script>
-
-const token = localStorage.getItem("access_token")
-
-
-
-// =========================
-// LOGIN CHECK
-// =========================
-
-if(!token){
-
-    window.location.href = "/"
-}
-
-
-
-// =========================
-// ENTER KEY SUPPORT
-// =========================
-
-document.addEventListener("DOMContentLoaded", function(){
-
-    document.getElementById(
-        "caseIdInput"
-    ).addEventListener(
-
-        "keypress",
-
-        function(event){
-
-            if(event.key === "Enter"){
-
-                loadTimeline()
-            }
-        }
-    )
-
-})
-
-
-
-// =========================
-// LOAD TIMELINE
-// =========================
-
-async function loadTimeline(){
-
-    const caseId =
-    document.getElementById(
-        "caseIdInput"
-    ).value
-
-
-    if(!caseId){
-
-        alert("Please enter case ID")
-
-        return
-    }
-
-
-
-    document.getElementById(
-        "timelineContainer"
-    ).innerHTML = `
-
-        <div class="text-center py-5">
-
-            <div class="spinner-border text-primary"></div>
-
-        </div>
-    `
-
-
-
-    try{
-
-        const response = await fetch(
-
-            `/timeline/${caseId}`,
-
-            {
-                headers:{
-                    "Authorization":
-                    `Bearer ${token}`
-                }
-            }
-        )
-
-
-
-        if(!response.ok){
-
-            throw new Error(
-                "Failed to load timeline"
-            )
-        }
-
-
-
-        const data = await response.json()
-
-
-
-        let html = `<div class="timeline">`
-
-
-
-        // =========================
-        // NO EVENTS
-        // =========================
-
-        if(data.timeline.length === 0){
-
-            html += `
-
-                <div class="alert alert-warning rounded-4">
-
-                    No timeline events found
-
-                </div>
-            `
-        }
-
-
-
-        // =========================
-        // TIMELINE EVENTS
-        // =========================
-
-        data.timeline.forEach(event => {
-
-            html += `
-
-            <div class="timeline-item">
-
-                <div class="timeline-dot"></div>
-
-                <div class="timeline-card">
-
-                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-
-                        <div>
-
-                            <div class="timeline-title">
-
-                                ${event.title}
-
-                            </div>
-
-                            <div class="timeline-time">
-
-                                ${new Date(
-                                    event.created_at
-                                ).toLocaleString()}
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="timeline-description">
-
-                        ${event.description}
-
-                    </div>
-
-                </div>
-
+<div class="max-w-3xl mx-auto space-y-6">
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+        <div class="pb-5 border-b border-slate-200 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+                    <i class="fa-solid fa-timeline text-amber-500"></i>
+                    <span>Chronological Audit Trail</span>
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">Permanent record ledger tracing compliance parameters.</p>
             </div>
-            `
-        })
-
-
-
-        html += `</div>`
-
-
-
-        document.getElementById(
-            "timelineContainer"
-        ).innerHTML = html
-
-    }
-
-    catch(error){
-
-        console.error(error)
-
-        document.getElementById(
-            "timelineContainer"
-        ).innerHTML = `
-
-        <div class="alert alert-danger rounded-4">
-
-            Failed to load timeline
-
+            
+            <div class="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tracking Case Target ID:</span>
+                <span id="case-id-display-tag" class="text-xs font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">#</span>
+            </div>
         </div>
-        `
+
+        <div class="relative border-l-2 border-slate-100 ml-4 pl-8 space-y-8" id="timeline-flow-wrapper">
+            </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function getCaseTargetContextID() {
+        return new URLSearchParams(window.location.search).get('case_id') || '1';
     }
-}
 
+    async function fetchAndRenderCaseTimeline() {
+        const caseId = getCaseTargetContextID();
+        document.getElementById('case-id-display-tag').innerText = `#00${caseId}`;
+        const wrapper = document.getElementById('timeline-flow-wrapper');
 
+        try {
+            const response = await fetch(`/api/timeline/${caseId}`);
+            if (!response.ok) throw new Error("Could not unlock specific case timeline streams.");
 
-// =========================
-// REFRESH TIMELINE
-// =========================
+            const events = await response.json();
+            
+            if (events.length === 0) {
+                wrapper.innerHTML = `
+                    <div class="absolute -left-[9px] top-0 w-4 h-4 bg-white border-2 border-slate-300 rounded-full"></div>
+                    <div class="text-sm text-slate-400 pl-2">No historical milestones have been cataloged for this case file entry yet.</div>
+                `;
+                return;
+            }
 
-function refreshTimeline(){
+            // Map and Join for performance efficiency
+            wrapper.innerHTML = events.map((event, index) => {
+                const isLatest = index === 0;
+                const pointColor = isLatest ? 'bg-amber-500 ring-4 ring-amber-100' : 'bg-slate-200 border-2 border-white shadow-sm';
+                
+                // Use standard Date formatting for consistent localization
+                const d = new Date(event.created_at);
+                const displayTime = event.created_at ? d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) : 'Recent Action';
 
-    loadTimeline()
-}
+                return `
+                    <div class="relative group">
+                        <div class="absolute -left-[41px] top-1 w-4 h-4 rounded-full transition-transform group-hover:scale-110 ${pointColor}"></div>
+                        <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-5 hover:border-slate-300 transition shadow-sm">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2">
+                                <h4 class="text-sm font-bold text-slate-900 group-hover:text-amber-600 transition">${event.title}</h4>
+                                <span class="text-[10px] font-mono font-bold text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-100">${displayTime}</span>
+                            </div>
+                            <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">${event.description}</p>
+                        </div>
+                    </div>`;
+            }).join('');
 
+        } catch (err) {
+            wrapper.innerHTML = `<div class="text-sm text-rose-600 font-medium">${err.message}</div>`;
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', fetchAndRenderCaseTimeline);
 </script>
-
 {% endblock %}

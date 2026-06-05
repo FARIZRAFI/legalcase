@@ -33,4 +33,6 @@ class TimelineEvent(Base):
     )
 
     # Relationship
-    case = relationship("Case")
+    case = relationship("Case",
+                back_populates="timeline_events"
+)
