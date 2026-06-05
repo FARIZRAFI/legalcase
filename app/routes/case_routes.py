@@ -77,40 +77,61 @@ def create_case(
     db: Session = Depends(get_db),
     user_data: dict = Depends(get_current_user_payload)
 ):
+    # 1. Resolve target lawyer ID safely
+    assigned_lawyer_id = case.lawyer_id
+    if not assigned_lawyer_id and user_data.get("role", "").lower() == "lawyer":
+        assigned_lawyer_id = user_data.get("user_id")
+
+    # 2. Build model object ensuring all constraints map fully
     new_case = Case(
+        case_number=case.case_number,                     # Fixed: Added missing mapping
         case_title=case.case_title,
-        case_description=case.case_description,
+        case_description=case.case_description or "",    # Fixed: Fallback empty string avoids database Null crash
         client_id=case.client_id,
-        lawyer_id=case.lawyer_id,
-        case_status="Open"
+        lawyer_id=assigned_lawyer_id,                    # Fixed: Uses resolved safe ID reference
+        case_status=case.case_status or "Open"
     )
-    db.add(new_case)
-    db.commit()
-    db.refresh(new_case)
+    
+    try:
+        db.add(new_case)
+        db.commit()
+        db.refresh(new_case)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Database insertion failed. Verify unique case_number constraints. Error: {str(e)}"
+        )
 
-    # Log milestone timeline capture
-    create_timeline_event(
-        db=db,
-        case_id=new_case.id,
-        title="Case Created",
-        description=f"Case:\n{new_case.case_title}\n\nStatus:\n{new_case.case_status}\n\nLawyer ID: {new_case.lawyer_id}\nClient ID: {new_case.client_id}"
-    )
+    # 3. Log milestone timeline capture safely
+    try:
+        create_timeline_event(
+            db=db,
+            case_id=new_case.id,
+            title="Case Created",
+            description=f"Case Number: {new_case.case_number}\nTitle: {new_case.case_title}\nStatus: {new_case.case_status}"
+        )
+    except Exception as timeline_err:
+        print(f"[Warning] Case saved, but timeline event generation skipped: {str(timeline_err)}")
 
-    # Send dynamic transactional in-app notification context
-    notification = Notification(
-        user_id=case.client_id,
-        title="Case Created",
-        message=f"New case created: {case.case_title}",
-        type="case"
-    )
-    db.add(notification)
-    db.commit()
+    # 4. Send dynamic transactional in-app notification context safely
+    try:
+        notification = Notification(
+            user_id=case.client_id,
+            title="Case Created",
+            message=f"New case created: {case.case_title} (Ref: {case.case_number})",
+            type="case"
+        )
+        db.add(notification)
+        db.commit()
+    except Exception as notification_err:
+        db.rollback()
+        print(f"[Warning] Case saved, but client push notification skipped: {str(notification_err)}")
 
     return {
         "message": "Case created successfully",
         "case_id": new_case.id
     }
-
 
 # =========================
 # GET ALL CASES
