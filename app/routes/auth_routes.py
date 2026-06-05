@@ -54,13 +54,17 @@ def register_user(
         user.password
     )
 
+    hashed_password = hash_password(
+    user.password
+)
+
     new_user = User(
-        full_name=user.full_name,
-        email=user.email,
-        hashed_password=hashed_password,   # FIXED
-        role=user.role,
-        phone_number=user.phone_number
-    )
+    full_name=user.full_name,
+    email=user.email,
+    password=hashed_password,
+    role=user.role,
+    phone_number=user.phone_number
+)
 
     db.add(new_user)
     db.commit()
