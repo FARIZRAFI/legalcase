@@ -71,11 +71,13 @@
 
             try {
                 // FIX: Update destination URI to route through your specific /api gateway layout
-                const response = await fetch('/api/token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: payload
-                });
+                const response = await fetch('/auth/login', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: payload
+});
 
                 const data = await response.json();
 
